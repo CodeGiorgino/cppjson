@@ -1,0 +1,5 @@
+.git/*
+.reb/hash
+
+obj/*
+build/*
