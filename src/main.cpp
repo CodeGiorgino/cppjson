@@ -2,31 +2,12 @@
 
 #include <cstddef>
 #include <optional>
-#include <stdexcept>
 #include <string>
 
 namespace json {
-auto json_value::try_get_int() -> std::optional<int> {
-    try {
-        return std::stoi(_literal);
-    } catch (const std::invalid_argument& e) {
-        return {};
+    auto json_value::value() const noexcept -> std::any {
+        return _value;
     }
-}
-
-auto json_value::try_get_float() -> std::optional<float> {
-    try {
-        return std::stof(_literal);
-    } catch (const std::invalid_argument& e) {
-        return {};
-    }
-}
-
-auto json_value::try_get_bool() noexcept -> std::optional<bool> {
-    if (_literal == "true") return true;
-    if (_literal == "false") return false;
-    return {};
-}
 
 auto json_object::operator[](std::string key) noexcept
     -> std::optional<json_node*> {

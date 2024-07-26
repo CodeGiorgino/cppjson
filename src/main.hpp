@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -12,23 +13,20 @@ struct json_node {
     virtual ~json_node() = default;
 };
 
-struct json_value : json_node {
+struct json_value final : json_node {
     json_value() = default;
-    json_value(std::string literal)
-        : _literal(literal) {}
+    json_value(std::any value)
+        : _value(value) {}
 
     ~json_value() = default;
 
-    auto get_literal() noexcept -> std::string;
-    auto try_get_int() -> std::optional<int>;
-    auto try_get_float() -> std::optional<float>;
-    auto try_get_bool() noexcept -> std::optional<bool>;
+    auto value() const noexcept -> std::any;
 
     private:
-    std::string _literal{};
+    std::any _value{};
 };
 
-struct json_object : json_node {
+struct json_object final : json_node {
     json_object() = default;
     json_object(std::unordered_map<std::string, json_node> childrens)
         : _childrens(childrens) {}
@@ -40,14 +38,13 @@ struct json_object : json_node {
     auto try_emplace(std::string key, json_node value) noexcept
         -> std::optional<json_node*>;
 
-    private:
+   private:
     std::unordered_map<std::string, json_node> _childrens{};
 };
 
-struct json_array : json_node {
+struct json_array final : json_node {
     json_array() = default;
-    json_array(std::vector<json_node> childrens)
-        : _childrens(childrens) {};
+    json_array(std::vector<json_node> childrens) : _childrens(childrens){};
 
     ~json_array() = default;
 
@@ -55,7 +52,7 @@ struct json_array : json_node {
     auto size() const noexcept -> size_t;
     auto push_back(json_node value) noexcept -> json_node*;
 
-    private:
+   private:
     std::vector<json_node> _childrens{};
 };
 }  // namespace json
