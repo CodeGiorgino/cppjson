@@ -64,15 +64,6 @@ json_node::operator object_t() const {
     return _value_object;
 }
 
-auto json_node::operator[](size_t index) -> json_node& {
-    if (_type != enum_value_type::json_array)
-        throw std::runtime_error("cannot access non array nodes by index");
-
-    if (index > _value_array.size())
-        throw std::out_of_range("index out of range");
-    return _value_array[index];
-}
-
 auto json_node::operator[](const char* key) -> json_node& {
     if (_type != enum_value_type::json_object)
         throw std::runtime_error("cannot access non object nodes by key");

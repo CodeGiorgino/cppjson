@@ -1,9 +1,6 @@
 #include "parser.hpp"
 
 #include <cctype>
-#include <iostream>
-#include <memory>
-#include <ostream>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -45,11 +42,11 @@ auto get_first_nested_node(std::string raw) -> std::pair<size_t, std::string> {
     size_t brackets_count{}, start{}, end{};
     for (size_t i{}; i < raw.length(); ++i) {
         ch = raw[i];
-        if ((ch == '{' || ch == '[') && brackets_count++ == 1)
+        if ((ch == '{' || ch == '[') && ++brackets_count == 2)
             start = i;
 
         else if ((ch == '}' || ch == ']') && --brackets_count == 1) {
-            end = i;
+            end = i + 1;
             break;
         }
     }
@@ -106,11 +103,11 @@ auto deserialize(std::string raw) -> json_node {
             }
 
             else {
-                retval.push_back(deserialize(match[2]));
-                raw = "[" + match[3].str() + "]";
+                retval.push_back(deserialize(match[1]));
+                raw = "[" + match[2].str() + "]";
             }
 
-            if (raw[0] == ',') raw.erase(1, 1);
+            if (raw[1] == ',') raw.erase(1, 1);
         };
 
         if (raw != "[]")

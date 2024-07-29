@@ -37,15 +37,6 @@ struct json_node final {
     operator array_t() const;
     operator object_t() const;
 
-    /* Operators overload */
-    /**
-     * @brief Access the specified array node
-     *
-     * @param index The index of the node
-     * @return The node reference
-     */
-    auto operator[](size_t index) -> json_node &;
-
     /**
      * @brief Access the specified object node
      *
