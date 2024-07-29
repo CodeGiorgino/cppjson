@@ -1,58 +1,114 @@
 #pragma once
 
-#include <any>
 #include <cstddef>
-#include <optional>
 #include <string>
-#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace json {
-struct json_node {
-    json_node() = default;
-    virtual ~json_node() = default;
-};
+/* Forward declaration */
+struct json_node;
 
-struct json_value final : json_node {
-    json_value() = default;
-    json_value(std::any value)
-        : _value(value) {}
+/* Helper typedefs */
+typedef std::vector<json_node> array_t;
+typedef std::pair<std::string, json_node> entry_t;
+typedef std::vector<entry_t> object_t;
 
-    ~json_value() = default;
+/* Json definition */
+struct json_node final {
+    /* Constructors */
+    json_node() noexcept;
+    json_node(bool value) noexcept;
+    json_node(int value) noexcept;
+    json_node(float value) noexcept;
+    json_node(const char *value) noexcept;
+    json_node(std::string value) noexcept;
+    json_node(array_t value) noexcept;
+    json_node(object_t value) noexcept;
+    json_node(const json_node &node) noexcept;
 
-    auto value() const noexcept -> std::any;
+    ~json_node() = default;
 
-    private:
-    std::any _value{};
-};
+    /* Type cast overload */
+    operator bool() const;
+    operator int() const;
+    operator float() const;
+    operator std::string() const;
+    operator array_t() const;
+    operator object_t() const;
 
-struct json_object final : json_node {
-    json_object() = default;
-    json_object(std::unordered_map<std::string, json_node> childrens)
-        : _childrens(childrens) {}
+    /* Operators overload */
+    /**
+     * @brief Access the specified array node
+     *
+     * @param index The index of the node
+     * @return The node reference
+     */
+    auto operator[](size_t index) -> json_node &;
 
-    ~json_object() = default;
+    /**
+     * @brief Access the specified object node
+     *
+     * @param key The key of the node
+     * @return The node reference
+     */
+    auto operator[](const char *key) -> json_node &;
+    /**
+     * @brief Access the specified object node
+     *
+     * @param key The key of the node
+     * @return The node reference
+     */
+    auto operator[](std::string key) -> json_node &;
 
-    auto operator[](std::string key) noexcept -> std::optional<json_node*>;
-    auto size() const noexcept -> size_t;
-    auto try_emplace(std::string key, json_node value) noexcept
-        -> std::optional<json_node*>;
+    auto operator=(const json_node &node) noexcept -> json_node &;
+    auto operator=(const bool &value) noexcept -> json_node &;
+    auto operator=(const int &value) noexcept -> json_node &;
+    auto operator=(const float &value) noexcept -> json_node &;
+    auto operator=(const char *value) noexcept -> json_node &;
+    auto operator=(const std::string &value) noexcept -> json_node &;
+    auto operator=(const array_t &value) noexcept -> json_node &;
+    auto operator=(const object_t &value) noexcept -> json_node &;
+
+    /* Function members */
+    /**
+     * @brief Dump the node
+     *
+     * @param indent The indentation level to follow (if 0 is provided, print on
+     * one line)
+     * @return The serialized node
+     */
+    auto dump(size_t indent) const noexcept -> std::string;
+
+    /**
+     * @brief Check if the value is set to null
+     *
+     * @return If the value is set to null
+     */
+    auto is_null() const noexcept -> bool;
 
    private:
-    std::unordered_map<std::string, json_node> _childrens{};
-};
+    /* Json value types */
+    enum class enum_value_type : size_t {
+        json_nil,
+        json_bool,
+        json_int,
+        json_float,
+        json_string,
+        json_array,
+        json_object
+    };
 
-struct json_array final : json_node {
-    json_array() = default;
-    json_array(std::vector<json_node> childrens) : _childrens(childrens){};
+    /* The current value type */
+    enum_value_type _type;
 
-    ~json_array() = default;
-
-    auto operator[](size_t index) noexcept -> std::optional<json_node*>;
-    auto size() const noexcept -> size_t;
-    auto push_back(json_node value) noexcept -> json_node*;
-
-   private:
-    std::vector<json_node> _childrens{};
+    /* The node values */
+    void *_value_nil{nullptr};
+    bool _value_bool{};
+    int _value_int{};
+    float _value_float{};
+    std::string _value_string{};
+    array_t _value_array{};
+    object_t _value_object{};
 };
 }  // namespace json
