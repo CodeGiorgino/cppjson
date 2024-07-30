@@ -61,6 +61,8 @@ Usage example from a json string:
 #include "deps/parser.hpp"
 #include "desp/cppjson.hpp"
 
+using std::literals::string_literals::operator""s;
+
 auto main(void) -> int {
     const auto raw = R"({
     "int_value": 1,
@@ -70,13 +72,13 @@ auto main(void) -> int {
 })";
 
     auto root = json::parser::deserialize(raw);
-    std::cout << "int_value: " << (int)root[{"int_value"}] << std::endl;
+    std::cout << "int_value: " << (int)root["int_value"s] << std::endl;
     std::cout << "string_value: "
-              << (std::string)root[{"nested"}][{"string_value"}] << std::endl;
+              << (std::string)root["nested"s]["string_value"s] << std::endl;
 
-    root[{"new_bool_value"}] = true;
+    root["new_bool_value"s] = true;
     std::cout << std::boolalpha
-              << "new_bool_value: " << (bool)root[{"new_bool_value"}]
+              << "new_bool_value: " << (bool)root["new_bool_value"s]
               << std::endl;
     return 0;
 }

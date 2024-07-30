@@ -43,7 +43,8 @@ auto normalize_json_string(const std::string &raw) noexcept -> std::string {
  * @param The raw json string
  * @return The end index of the nested node and the node itself
  */
-auto get_first_nested_node(std::string raw) -> std::pair<size_t, std::string> {
+auto get_first_nested_node(const std::string &raw)
+    -> std::pair<size_t, std::string> {
     if (raw.empty())
         throw std::invalid_argument("cannot find nested node in empty string");
     if (raw[0] != '{' && raw[0] != '[')
@@ -84,7 +85,7 @@ auto deserialize(std::string raw) -> json_node {
             if (match[2].str()[0] == '{' || match[2].str()[0] == '[') {
                 const auto [end, raw_node] = get_first_nested_node(raw);
                 retval[match[1]] = deserialize(raw_node);
-                raw = "{" + raw.substr(end + 1) + "}";
+                raw = "{" + raw.substr(end);
             }
 
             else {
@@ -111,7 +112,7 @@ auto deserialize(std::string raw) -> json_node {
             if (match[1].str()[0] == '{' || match[1].str()[0] == '[') {
                 const auto [end, raw_node] = get_first_nested_node(raw);
                 retval[array_size++] = deserialize(raw_node);
-                raw = "[" + raw.substr(end + 1) + "]";
+                raw = "[" + raw.substr(end + 1);
             }
 
             else {
@@ -145,7 +146,8 @@ auto deserialize(std::string raw) -> json_node {
                  std::regex_search(raw, match, std::regex("^\"(.+)\"$")))
             return json_node(match[1]);
         else
-            throw std::invalid_argument("invalid value found");
+            throw std::invalid_argument("cannot parse '" + raw +
+                                        "' to json value");
     }
 
     throw std::invalid_argument("cannot deserialize the json string");
