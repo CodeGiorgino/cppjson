@@ -10,6 +10,12 @@
 
 namespace json {
 namespace parser {
+/**
+ * @brief Normalise the json string removing spaces and newlines
+ *
+ * @param raw The raw json string
+ * @return The normalised json string
+ */
 auto normalize_json_string(std::string raw) noexcept -> std::string {
     std::string retval{};
     bool quoted = false;
@@ -31,6 +37,12 @@ auto normalize_json_string(std::string raw) noexcept -> std::string {
     return retval;
 }
 
+/**
+ * @brief Get the first nested node in the array or the object
+ *
+ * @param The raw json string
+ * @return The end index of the nested node and the node itself
+ */
 auto get_first_nested_node(std::string raw) -> std::pair<size_t, std::string> {
     if (raw.empty())
         throw std::invalid_argument("cannot find nested node in empty string");
@@ -90,20 +102,20 @@ auto deserialize(std::string raw) -> json_node {
     }
 
     else if (raw[0] == '[') {
-        array_t retval{};
+        json_node retval{object_t{}};
+        size_t array_size = 0;
         std::smatch match{};
 
         while (
             std::regex_search(raw, match, std::regex("^\\[(.+?)(,.+)?\\]$"))) {
-            if (match[2].str()[0] == '{' || match[2].str()[0] == '[' ||
-                match[2].str()[0] == '"') {
+            if (match[1].str()[0] == '{' || match[1].str()[0] == '[') {
                 const auto [end, raw_node] = get_first_nested_node(raw);
-                retval.push_back(deserialize(raw_node));
+                retval[array_size++] = deserialize(raw_node);
                 raw = "[" + raw.substr(end + 1) + "]";
             }
 
             else {
-                retval.push_back(deserialize(match[1]));
+                retval[array_size++] = deserialize(match[1]);
                 raw = "[" + match[2].str() + "]";
             }
 

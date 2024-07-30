@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace json {
@@ -10,8 +11,8 @@ namespace json {
 struct json_node;
 
 /* Helper typedefs */
-typedef std::vector<json_node> array_t;
-typedef std::pair<std::string, json_node> entry_t;
+typedef std::variant<size_t, std::string> key_t;
+typedef std::pair<key_t, json_node> entry_t;
 typedef std::vector<entry_t> object_t;
 
 /* Json definition */
@@ -23,18 +24,16 @@ struct json_node final {
     json_node(float value) noexcept;
     json_node(const char *value) noexcept;
     json_node(std::string value) noexcept;
-    json_node(array_t value) noexcept;
     json_node(object_t value) noexcept;
     json_node(const json_node &node) noexcept;
 
-    ~json_node() = default;
+    ~json_node() noexcept;
 
     /* Type cast overload */
     operator bool() const;
     operator int() const;
     operator float() const;
     operator std::string() const;
-    operator array_t() const;
     operator object_t() const;
 
     /**
@@ -43,14 +42,7 @@ struct json_node final {
      * @param key The key of the node
      * @return The node reference
      */
-    auto operator[](const char *key) -> json_node &;
-    /**
-     * @brief Access the specified object node
-     *
-     * @param key The key of the node
-     * @return The node reference
-     */
-    auto operator[](std::string key) -> json_node &;
+    auto operator[](const key_t &key) -> json_node &;
 
     auto operator=(const json_node &node) noexcept -> json_node &;
     auto operator=(const bool &value) noexcept -> json_node &;
@@ -58,7 +50,6 @@ struct json_node final {
     auto operator=(const float &value) noexcept -> json_node &;
     auto operator=(const char *value) noexcept -> json_node &;
     auto operator=(const std::string &value) noexcept -> json_node &;
-    auto operator=(const array_t &value) noexcept -> json_node &;
     auto operator=(const object_t &value) noexcept -> json_node &;
 
     /* Function members */
@@ -70,6 +61,13 @@ struct json_node final {
      * @return The serialized node
      */
     auto dump(size_t indent) const noexcept -> std::string;
+
+    /**
+     * @brief Set the object to hold a null value
+     *
+     * @return The node reference
+     */
+    auto set_null() noexcept -> json_node &;
 
     /**
      * @brief Check if the value is set to null
@@ -86,20 +84,13 @@ struct json_node final {
         json_int,
         json_float,
         json_string,
-        json_array,
         json_object
     };
 
     /* The current value type */
     enum_value_type _type;
 
-    /* The node values */
-    void *_value_nil{nullptr};
-    bool _value_bool{};
-    int _value_int{};
-    float _value_float{};
-    std::string _value_string{};
-    array_t _value_array{};
-    object_t _value_object{};
+    /* The node value */
+    std::variant<void *, bool, int, float, std::string *, object_t *> _value;
 };
 }  // namespace json
