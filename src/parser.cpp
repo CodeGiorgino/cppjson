@@ -6,7 +6,7 @@
 #include <string>
 #include <utility>
 
-#include "main.hpp"
+#include "cppjson.hpp"
 
 namespace json {
 namespace parser {
@@ -16,7 +16,7 @@ namespace parser {
  * @param raw The raw json string
  * @return The normalised json string
  */
-auto normalize_json_string(std::string raw) noexcept -> std::string {
+auto normalize_json_string(const std::string &raw) noexcept -> std::string {
     std::string retval{};
     bool quoted = false;
     for (const auto &ch : raw) {

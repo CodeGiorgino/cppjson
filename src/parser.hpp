@@ -1,6 +1,6 @@
 #pragma once
 
-#include "main.hpp"
+#include "cppjson.hpp"
 
 namespace json {
 namespace parser {
