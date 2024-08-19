@@ -1,59 +1,54 @@
 # cppjson
 Small c++ library to interact with json file
 
-## Table of contents
-- [Installation](#installation)
-- [Usage](#usage)
-
-### Installation
+## Installation
 Clone the repository and execute the build script, then just copy the build directory in to your
 project and link the library
-```bash
-git clone 'https://github.com/CodeGiorgino/cppjson.git'
-cd cppjson
 
-./build.sh
-cd ..
-
-mkdir test
-cp -r cppjson/buil test/deps
-cd test
-
-touch main.cpp
-tee -a main.cpp << END
-#include "deps/cppjson.hpp"
-
-auto int main(void) -> int {
-    return 0;
-}
-END
-
-g++ -Wall -Wextra -std=c++23 -o test main.cpp deps/cppjson.a
-./test
-```
-
-### Usage
+## Usage
+### Types
 Supported json values:
-
-Name        | Underlying type
-:--         | :--
-json_nil    | `(void*)nullptr`
-json_bool   | `bool`
-json_int    | `int`
-json_float  | `float`
-json_string | `std::string`
-json_object | `object_t`
+| Name | Underlying type |
+| :--- | :-------------- |
+| json_nil    | `(void*)nullptr` |
+| json_bool   | `bool          ` |
+| json_int    | `int           ` |
+| json_float  | `float         ` |
+| json_string | `std::string   ` |
+| json_array  | `array_t       ` |
+| json_object | `object_t      ` |
 
 Additional types:
+| Name | Underlying type |
+| :--- | :-------------- |
+| array_t  | `std::vector<json_node>                    ` |
+| entry_t  | `std::pair<std::string, json_node>         ` |
+| object_t | `std::unordered_map<std::string, json_node>` |
 
-Name     | Underlying type
-:--      | :--
-key_t    | `std::variant<size_t, std::string>`
-entry_t  | `std::pair<key_t, json_node>`
-object_t | `std::vector<entry_t>`
+### Insert nodes
+You can insert nodes to `array_t` nodes using the overloaded `operator<<` which expects a `json_node`
+You can insert nodes to `object_t` nodes using the overloaded `operator<<` which expects a `entry_t`
+In every other case, a `runtime_error` is thrown
 
+### Access nodes
+You can access nodes of `array_t` nodes using the overloaded `operator[]` which expects a `size_t`
+You can access nodes of `object_t` nodes using the overloaded `operator[]` which expects a `std::string`,
+if no node was found a new one is created with value `json_nil`
+In every other case, a `runtime_error` is thrown
+
+### Access nodes' value
+You can access a node's value by casting it to the contained type
+Supported casts:
+- `bool       `
+- `int        ` 
+- `float      `
+- `std::string`
+- `array_t    `
+- `object_t   ` 
+
+
+### Example
 Usage example from a json string:
-
 ```c++
 #include <ios>
 #include <iostream>
