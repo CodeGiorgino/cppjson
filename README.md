@@ -5,6 +5,8 @@ Small c++ library to interact with json file
 Clone the repository and execute the build script, then just copy the build directory in to your
 project and link the library
 
+> [reb](https://github.com/CodeGiorgino/reb) build is supported, just run `reb run rel`
+
 ## Usage
 ### Types
 Supported json values:
