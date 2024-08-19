@@ -23,6 +23,7 @@ typedef std::variant<void *, bool, int, float, std::shared_ptr<std::string>,
 /* Json definition */
 struct json_node final {
     /* Constructors */
+   public:
     json_node() noexcept;
     json_node(const bool &value) noexcept;
     json_node(const int &value) noexcept;
@@ -36,6 +37,7 @@ struct json_node final {
     ~json_node() noexcept = default;
 
     /* Type cast overload */
+   public:
     operator bool() const;
     operator int() const;
     operator float() const;
@@ -43,13 +45,30 @@ struct json_node final {
     operator array_t() const;
     operator object_t() const;
 
+    /* Operators overload */
+   public:
+    /**
+     * @brief Access the specified object node
+     *
+     * @param key The index of the node
+     * @return The node reference
+     */
+    auto operator[](const size_t &index) -> json_node &;
+
     /**
      * @brief Access the specified object node
      *
      * @param key The key of the node
      * @return The node reference
      */
-    auto operator[](const size_t &index) -> json_node &;
+    auto operator[](const char *key) -> json_node &;
+
+    /**
+     * @brief Access the specified object node
+     *
+     * @param key The key of the node
+     * @return The node reference
+     */
     auto operator[](const std::string &key) -> json_node &;
 
     /**
@@ -78,6 +97,7 @@ struct json_node final {
     auto operator=(const object_t &value) noexcept -> json_node &;
 
     /* Function members */
+   public:
     /**
      * @brief Dump the node
      *

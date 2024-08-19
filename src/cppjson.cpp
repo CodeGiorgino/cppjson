@@ -103,6 +103,10 @@ auto json_node::operator[](const size_t& index) -> json_node& {
     return (*ptr)[index];
 }
 
+auto json_node::operator[](const char* key) -> json_node& {
+    return (*this)[std::string{key}];
+}
+
 auto json_node::operator[](const std::string& key) -> json_node& {
     if (!std::holds_alternative<std::shared_ptr<object_t>>(_value))
         throw std::runtime_error(
