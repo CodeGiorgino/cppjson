@@ -1,179 +1,186 @@
 #include "cppjson.hpp"
 
+#include <bits/ranges_util.h>
+
 #include <cassert>
 #include <cstddef>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
-#include <utility>
 #include <variant>
 
 namespace json {
 json_node::json_node() noexcept {
-    set_null();
+    _value = nullptr;
 }
 
-json_node::json_node(bool value) noexcept {
-    set_null();
-    _type = enum_value_type::json_bool;
+json_node::json_node(const bool& value) noexcept {
     _value = value;
 }
 
-json_node::json_node(int value) noexcept {
-    set_null();
-    _type = enum_value_type::json_int;
+json_node::json_node(const int& value) noexcept {
     _value = value;
 }
 
-json_node::json_node(float value) noexcept {
-    set_null();
-    _type = enum_value_type::json_float;
+json_node::json_node(const float& value) noexcept {
     _value = value;
 }
 
 json_node::json_node(const char* value) noexcept {
-    set_null();
-    _type = enum_value_type::json_string;
-    _value = new std::string{};
-
-    auto* ptr = std::get<std::string*>(_value);
-    *ptr = value;
+    _value = std::make_shared<std::string>(value);
 }
 
-json_node::json_node(std::string value) noexcept {
-    set_null();
-    _type = enum_value_type::json_string;
-    _value = new std::string{};
-
-    auto* ptr = std::get<std::string*>(_value);
-    *ptr = value;
+json_node::json_node(const std::string& value) noexcept {
+    _value = std::make_shared<std::string>(value);
 }
 
-json_node::json_node(object_t value) noexcept {
-    set_null();
-    _type = enum_value_type::json_object;
-    _value = new object_t{};
+json_node::json_node(const array_t& value) noexcept {
+    _value = std::make_shared<array_t>(value);
+}
 
-    auto* ptr = std::get<object_t*>(_value);
-    *ptr = value;
+json_node::json_node(const object_t& value) noexcept {
+    _value = std::make_shared<object_t>(value);
 }
 
 json_node::json_node(const json_node& node) noexcept {
-    *this = node;
-}
-
-json_node::~json_node() noexcept {
-    set_null();
+    if (std::holds_alternative<std::shared_ptr<std::string>>(node._value))
+        _value = std::make_shared<std::string>((std::string)node);
+    else if (std::holds_alternative<std::shared_ptr<array_t>>(node._value))
+        _value = std::make_shared<array_t>((array_t)node);
+    else if (std::holds_alternative<std::shared_ptr<object_t>>(node._value))
+        _value = std::make_shared<object_t>((object_t)node);
+    else
+        _value = node._value;
 }
 
 json_node::operator bool() const {
-    if (_type != enum_value_type::json_bool) throw std::bad_cast();
-    return std::get<bool>(_value);
+    if (auto* ptr = std::get_if<bool>(&_value)) return *ptr;
+    throw std::bad_cast();
 }
 
 json_node::operator int() const {
-    if (_type != enum_value_type::json_int) throw std::bad_cast();
-    return std::get<int>(_value);
+    if (auto* ptr = std::get_if<int>(&_value)) return *ptr;
+    throw std::bad_cast();
 }
 
 json_node::operator float() const {
-    if (_type != enum_value_type::json_float) throw std::bad_cast();
-    return std::get<float>(_value);
+    if (auto* ptr = std::get_if<float>(&_value)) return *ptr;
+    throw std::bad_cast();
 }
 
 json_node::operator std::string() const {
-    if (_type != enum_value_type::json_string) throw std::bad_cast();
-    auto* ptr = std::get<std::string*>(_value);
-    return *ptr;
+    if (!std::holds_alternative<std::shared_ptr<std::string>>(_value))
+        throw std::bad_cast();
+    return *std::get<std::shared_ptr<std::string>>(_value);
+}
+
+json_node::operator array_t() const {
+    if (!std::holds_alternative<std::shared_ptr<array_t>>(_value))
+        throw std::bad_cast();
+    return *std::get<std::shared_ptr<array_t>>(_value);
 }
 
 json_node::operator object_t() const {
-    if (_type != enum_value_type::json_object) throw std::bad_cast();
-    auto* ptr = std::get<object_t*>(_value);
-    return *ptr;
+    if (!std::holds_alternative<std::shared_ptr<object_t>>(_value))
+        throw std::bad_cast();
+    return *std::get<std::shared_ptr<object_t>>(_value);
 }
 
-auto json_node::operator[](const key_t& key) -> json_node& {
-    if (_type != enum_value_type::json_object) *this = object_t{};
+auto json_node::operator[](const size_t& index) -> json_node& {
+    if (!std::holds_alternative<std::shared_ptr<array_t>>(_value))
+        throw std::runtime_error(
+            "cannot access node by index\n"
+            "-- not an array_t");
 
-    auto* ptr = std::get<object_t*>(_value);
-    if (ptr->size() != 0) {
-        if ((*ptr)[0].first.index() != key.index())
-            throw std::runtime_error(
-                "cannot access node by the key_t provided");
+    auto ptr = std::get<std::shared_ptr<array_t>>(_value);
+    if (index >= ptr->size())
+        throw std::out_of_range(
+            "index out of range\n"
+            "-- array_t size is " +
+            std::to_string(ptr->size()));
 
-        for (auto& entry : *ptr) {
-            switch (key.index()) {
-                case 0:  // size_t
-                    if (std::get<0>(entry.first) == std::get<0>(key))
-                        return entry.second;
-                    break;
-                case 1:  // std::string
-                    if (std::get<1>(entry.first) == std::get<1>(key))
-                        return entry.second;
-                    break;
-                default:
-                    throw std::logic_error("unreachable");
-            }
-        }
-    }
+    return (*ptr)[index];
+}
 
-    ptr->push_back({key, {}});
-    return ptr->back().second;
+auto json_node::operator[](const std::string& key) -> json_node& {
+    if (!std::holds_alternative<std::shared_ptr<object_t>>(_value))
+        throw std::runtime_error(
+            "cannot access node by key\n"
+            "-- not an object_t");
+
+    auto ptr = std::get<std::shared_ptr<object_t>>(_value);
+    if (!ptr->contains(key)) ptr->emplace(key, json_node{});
+    return (*ptr)[key];
+}
+
+auto json_node::operator<<(const json_node& node) -> json_node& {
+    if (!std::holds_alternative<std::shared_ptr<array_t>>(_value))
+        throw std::runtime_error(
+            "cannot insert node\n"
+            "-- not an array_t");
+
+    auto ptr = std::get<std::shared_ptr<array_t>>(_value);
+    ptr->push_back(node);
+    return ptr->back();
+}
+
+auto json_node::operator<<(const entry_t& entry) -> json_node& {
+    if (!std::holds_alternative<std::shared_ptr<object_t>>(_value))
+        throw std::runtime_error(
+            "cannot insert node\n"
+            "-- not an object_t");
+
+    auto ptr = std::get<std::shared_ptr<object_t>>(_value);
+    ptr->try_emplace(entry.first, entry.second);
+    return (*ptr)[entry.first];
 }
 
 auto json_node::operator=(const json_node& node) noexcept -> json_node& {
-    set_null();
-    _type = node._type;
-
-    if (_type == enum_value_type::json_string) {
-        _value = new std::string;
-
-        auto* ptr = std::get<std::string*>(_value);
-        *ptr = *std::get<std::string*>(node._value);
-    }
-
-    else if (_type == enum_value_type::json_object) {
-        _value = new object_t;
-
-        auto* ptr = std::get<object_t*>(_value);
-        *ptr = *std::get<object_t*>(node._value);
-    }
-
-    else {
+    if (std::holds_alternative<std::shared_ptr<std::string>>(node._value))
+        _value = std::make_shared<std::string>((std::string)node);
+    else if (std::holds_alternative<std::shared_ptr<array_t>>(node._value))
+        _value = std::make_shared<array_t>((array_t)node);
+    else if (std::holds_alternative<std::shared_ptr<object_t>>(node._value))
+        _value = std::make_shared<object_t>((object_t)node);
+    else
         _value = node._value;
-    }
 
     return *this;
 }
 
 auto json_node::operator=(const bool& value) noexcept -> json_node& {
-    *this = json_node{value};
+    _value = value;
     return *this;
 }
 
 auto json_node::operator=(const int& value) noexcept -> json_node& {
-    *this = json_node{value};
+    _value = value;
     return *this;
 }
 
 auto json_node::operator=(const float& value) noexcept -> json_node& {
-    *this = json_node{value};
+    _value = value;
     return *this;
 }
 
 auto json_node::operator=(const char* value) noexcept -> json_node& {
-    *this = json_node{std::string(value)};
+    _value = std::make_shared<std::string>(value);
     return *this;
 }
 
 auto json_node::operator=(const std::string& value) noexcept -> json_node& {
-    *this = json_node{value};
+    _value = std::make_shared<std::string>(value);
+    return *this;
+}
+
+auto json_node::operator=(const array_t& value) noexcept -> json_node& {
+    _value = std::make_shared<array_t>(value);
     return *this;
 }
 
 auto json_node::operator=(const object_t& value) noexcept -> json_node& {
-    *this = json_node{value};
+    _value = std::make_shared<object_t>(value);
     return *this;
 }
 
@@ -184,22 +191,11 @@ auto json_node::dump(size_t indent) const noexcept -> std::string {
 }
 
 auto json_node::set_null() noexcept -> json_node& {
-    if (_type == enum_value_type::json_string) {
-        auto* ptr = std::get<std::string*>(_value);
-        delete ptr;
-    }
-
-    if (_type == enum_value_type::json_object) {
-        auto* ptr = std::get<object_t*>(_value);
-        delete ptr;
-    }
-
-    _type = enum_value_type::json_nil;
-    _value = (void*)nullptr;
+    _value = nullptr;
     return *this;
 }
 
 auto json_node::is_null() const noexcept -> bool {
-    return _type == enum_value_type::json_nil;
+    return std::holds_alternative<void*>(_value);
 }
 }  // namespace json

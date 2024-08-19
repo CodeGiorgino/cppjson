@@ -1,6 +1,8 @@
 #include "parser.hpp"
 
 #include <cctype>
+#include <iostream>
+#include <ostream>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -84,12 +86,12 @@ auto deserialize(std::string raw) -> json_node {
                                  std::regex("^\\{\"(.+?)\":(.+?)(,.+)?\\}$"))) {
             if (match[2].str()[0] == '{' || match[2].str()[0] == '[') {
                 const auto [end, raw_node] = get_first_nested_node(raw);
-                retval[match[1]] = deserialize(raw_node);
+                retval << (entry_t){match[1], deserialize(raw_node)};
                 raw = "{" + raw.substr(end);
             }
 
             else {
-                retval[match[1]] = deserialize(match[2]);
+                retval << (entry_t){match[1], deserialize(match[2])};
                 raw = "{" + match[3].str() + "}";
             }
 
@@ -97,26 +99,27 @@ auto deserialize(std::string raw) -> json_node {
         };
 
         if (raw != "{}")
-            throw std::invalid_argument("cannot deserialize the json string");
+            throw std::invalid_argument(
+                "cannot deserialize the json string into an object");
 
         return retval;
     }
 
     else if (raw[0] == '[') {
-        json_node retval{object_t{}};
-        size_t array_size = 0;
+        json_node retval{array_t{}};
         std::smatch match{};
 
         while (
             std::regex_search(raw, match, std::regex("^\\[(.+?)(,.+)?\\]$"))) {
             if (match[1].str()[0] == '{' || match[1].str()[0] == '[') {
                 const auto [end, raw_node] = get_first_nested_node(raw);
-                retval[array_size++] = deserialize(raw_node);
+                retval << deserialize(raw_node);
+                std::cout << "info: inserted" << std::endl;
                 raw = "[" + raw.substr(end + 1);
             }
 
             else {
-                retval[array_size++] = deserialize(match[1]);
+                retval << deserialize(match[1]);
                 raw = "[" + match[2].str() + "]";
             }
 
@@ -124,9 +127,10 @@ auto deserialize(std::string raw) -> json_node {
         };
 
         if (raw != "[]")
-            throw std::invalid_argument("cannot deserialize the json string");
+            throw std::invalid_argument(
+                "cannot deserialize the json string into an array");
 
-        return json_node{retval};
+        return retval;
     }
 
     else {
@@ -147,7 +151,7 @@ auto deserialize(std::string raw) -> json_node {
             return json_node(match[1]);
         else
             throw std::invalid_argument("cannot parse '" + raw +
-                                        "' to json value");
+                                        "' as a json value");
     }
 
     throw std::invalid_argument("cannot deserialize the json string");

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -11,29 +13,34 @@ namespace json {
 struct json_node;
 
 /* Helper typedefs */
-typedef std::variant<size_t, std::string> key_t;
-typedef std::pair<key_t, json_node> entry_t;
-typedef std::vector<entry_t> object_t;
+typedef std::pair<std::string, json_node> entry_t;
+typedef std::vector<json_node> array_t;
+typedef std::unordered_map<std::string, json_node> object_t;
+typedef std::variant<void *, bool, int, float, std::shared_ptr<std::string>,
+                     std::shared_ptr<array_t>, std::shared_ptr<object_t>>
+    json_value;
 
 /* Json definition */
 struct json_node final {
     /* Constructors */
     json_node() noexcept;
-    json_node(bool value) noexcept;
-    json_node(int value) noexcept;
-    json_node(float value) noexcept;
+    json_node(const bool &value) noexcept;
+    json_node(const int &value) noexcept;
+    json_node(const float &value) noexcept;
     json_node(const char *value) noexcept;
-    json_node(std::string value) noexcept;
-    json_node(object_t value) noexcept;
+    json_node(const std::string &value) noexcept;
+    json_node(const array_t &value) noexcept;
+    json_node(const object_t &value) noexcept;
     json_node(const json_node &node) noexcept;
 
-    ~json_node() noexcept;
+    ~json_node() noexcept = default;
 
     /* Type cast overload */
     operator bool() const;
     operator int() const;
     operator float() const;
     operator std::string() const;
+    operator array_t() const;
     operator object_t() const;
 
     /**
@@ -42,7 +49,24 @@ struct json_node final {
      * @param key The key of the node
      * @return The node reference
      */
-    auto operator[](const key_t &key) -> json_node &;
+    auto operator[](const size_t &index) -> json_node &;
+    auto operator[](const std::string &key) -> json_node &;
+
+    /**
+     * @brief Append the given node to an array_t
+     *
+     * @param node The node to append
+     * @return The appended node
+     */
+    auto operator<<(const json_node &node) -> json_node &;
+
+    /**
+     * @brief Emplace the given node to an object_t
+     *
+     * @param entry The entry to emplace
+     * @return The emplaced node
+     */
+    auto operator<<(const entry_t &entry) -> json_node &;
 
     auto operator=(const json_node &node) noexcept -> json_node &;
     auto operator=(const bool &value) noexcept -> json_node &;
@@ -50,6 +74,7 @@ struct json_node final {
     auto operator=(const float &value) noexcept -> json_node &;
     auto operator=(const char *value) noexcept -> json_node &;
     auto operator=(const std::string &value) noexcept -> json_node &;
+    auto operator=(const array_t &value) noexcept -> json_node &;
     auto operator=(const object_t &value) noexcept -> json_node &;
 
     /* Function members */
@@ -77,20 +102,7 @@ struct json_node final {
     auto is_null() const noexcept -> bool;
 
    private:
-    /* Json value types */
-    enum class enum_value_type : size_t {
-        json_nil,
-        json_bool,
-        json_int,
-        json_float,
-        json_string,
-        json_object
-    };
-
-    /* The current value type */
-    enum_value_type _type;
-
     /* The node value */
-    std::variant<void *, bool, int, float, std::string *, object_t *> _value;
+    json_value _value;
 };
 }  // namespace json
