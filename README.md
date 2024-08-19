@@ -28,18 +28,18 @@ Additional types:
 | object_t | `std::unordered_map<std::string, json_node>` |
 
 ### Insert nodes
-You can insert nodes to `array_t` nodes using the overloaded `operator<<` which expects a `json_node`
-You can insert nodes to `object_t` nodes using the overloaded `operator<<` which expects a `entry_t`
+You can insert nodes to `array_t` nodes using the overloaded `operator<<` which expects a `json_node` \
+You can insert nodes to `object_t` nodes using the overloaded `operator<<` which expects a `entry_t` \
 In every other case, a `runtime_error` is thrown
 
 ### Access nodes
-You can access nodes of `array_t` nodes using the overloaded `operator[]` which expects a `size_t`
+You can access nodes of `array_t` nodes using the overloaded `operator[]` which expects a `size_t` \
 You can access nodes of `object_t` nodes using the overloaded `operator[]` which expects a `std::string`,
-if no node was found a new one is created with value `json_nil`
+if no node was found a new one is created with value `json_nil` \
 In every other case, a `runtime_error` is thrown
 
 ### Access nodes' value
-You can access a node's value by casting it to the contained type
+You can access a node's value by casting it to the contained type \
 Supported casts:
 - `bool       `
 - `int        ` 
