@@ -101,11 +101,12 @@ struct json_node final {
     /**
      * @brief Dump the node
      *
-     * @param indent The indentation level to follow (if 0 is provided, print on
+     * @param indent The indentation to follow (if 0 is provided, print on
      * one line)
+     * @param level The indentation level
      * @return The serialized node
      */
-    auto dump(size_t indent) const noexcept -> std::string;
+    auto dump(size_t indent, size_t level = 0) const noexcept -> std::string;
 
     /**
      * @brief Set the object to hold a null value

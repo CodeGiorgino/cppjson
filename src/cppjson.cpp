@@ -90,13 +90,13 @@ json_node::operator object_t() const {
 auto json_node::operator[](const size_t& index) -> json_node& {
     if (!std::holds_alternative<std::shared_ptr<array_t>>(_value))
         throw std::runtime_error(
-            "cannot access node by index\n"
+            "cannot access node by index\r\n"
             "-- not an array_t");
 
     auto ptr = std::get<std::shared_ptr<array_t>>(_value);
     if (index >= ptr->size())
         throw std::out_of_range(
-            "index out of range\n"
+            "index out of range\r\n"
             "-- array_t size is " +
             std::to_string(ptr->size()));
 
@@ -110,7 +110,7 @@ auto json_node::operator[](const char* key) -> json_node& {
 auto json_node::operator[](const std::string& key) -> json_node& {
     if (!std::holds_alternative<std::shared_ptr<object_t>>(_value))
         throw std::runtime_error(
-            "cannot access node by key\n"
+            "cannot access node by key\r\n"
             "-- not an object_t");
 
     auto ptr = std::get<std::shared_ptr<object_t>>(_value);
@@ -121,7 +121,7 @@ auto json_node::operator[](const std::string& key) -> json_node& {
 auto json_node::operator<<(const json_node& node) -> json_node& {
     if (!std::holds_alternative<std::shared_ptr<array_t>>(_value))
         throw std::runtime_error(
-            "cannot insert node\n"
+            "cannot insert node\r\n"
             "-- not an array_t");
 
     auto ptr = std::get<std::shared_ptr<array_t>>(_value);
@@ -132,7 +132,7 @@ auto json_node::operator<<(const json_node& node) -> json_node& {
 auto json_node::operator<<(const entry_t& entry) -> json_node& {
     if (!std::holds_alternative<std::shared_ptr<object_t>>(_value))
         throw std::runtime_error(
-            "cannot insert node\n"
+            "cannot insert node\r\n"
             "-- not an object_t");
 
     auto ptr = std::get<std::shared_ptr<object_t>>(_value);
@@ -188,9 +188,73 @@ auto json_node::operator=(const object_t& value) noexcept -> json_node& {
     return *this;
 }
 
-auto json_node::dump(size_t indent) const noexcept -> std::string {
-    (void)indent;
-    assert(true && "not implemented exception");
+auto pad_left(const std::string& source, size_t size) noexcept -> std::string {
+    std::string retval{};
+    for (size_t i = 0; i < size; ++i) retval += ' ';
+    return retval + source;
+}
+
+auto pad_left(const char* source, size_t size) noexcept -> std::string {
+    return pad_left(std::string{source}, size);
+}
+
+auto json_node::dump(size_t indent, size_t level) const noexcept
+    -> std::string {
+    if (std::holds_alternative<void*>(_value))
+        return "null";
+    else if (std::holds_alternative<bool>(_value))
+        return (bool)(*this) ? "true" : "false";
+    else if (std::holds_alternative<int>(_value))
+        return std::to_string((int)(*this));
+    else if (std::holds_alternative<float>(_value))
+        return std::to_string((float)(*this));
+    else if (std::holds_alternative<std::shared_ptr<std::string>>(_value))
+        return "\"" + (std::string)(*this) + "\"";
+    else if (std::holds_alternative<std::shared_ptr<array_t>>(_value)) {
+        std::string retval{"["};
+        if (indent != 0) retval += "\r\n";
+
+        for (const auto& entry : (array_t)(*this)) {
+            if (indent != 0) retval += pad_left("", indent * level);
+            retval += entry.dump(indent, level + 1) + ", ";
+            if (indent != 0) retval += "\r\n";
+        }
+
+        if (((array_t)(*this)).size() == 0)
+            retval.erase(retval.end() - 2, retval.end());
+        else
+            retval.erase(retval.end() - 4);
+
+        if (indent != 0)
+            retval += pad_left(
+                "", indent * (level == 0 || ((array_t)(*this)).size() == 0
+                                  ? 0
+                                  : level - 1));
+        return retval + "]";
+    } else if (std::holds_alternative<std::shared_ptr<object_t>>(_value)) {
+        std::string retval{"{"};
+        if (indent != 0) retval += "\r\n";
+
+        for (const auto& [key, value] : (object_t)(*this)) {
+            retval += pad_left(
+                "\"" + key + "\": " + value.dump(indent, level + 1) + ", ",
+                indent * level);
+            if (indent != 0) retval += "\r\n";
+        }
+
+        if (((object_t)(*this)).size() == 0)
+            retval.erase(retval.end() - 2, retval.end());
+        else
+            retval.erase(retval.end() - 4);
+
+        if (indent != 0)
+            retval += pad_left(
+                "", indent * (level == 0 || ((object_t)(*this)).size() == 0
+                                  ? 0
+                                  : level - 1));
+        return retval + "}";
+    }
+
     return "";
 }
 
