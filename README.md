@@ -10,15 +10,13 @@ project and link the library
 ## Usage
 ### Types
 Supported json values:
-| Name | Underlying type |
-| :--- | :-------------- |
-| json_nil    | `(void*)nullptr` |
-| json_bool   | `bool          ` |
-| json_int    | `int           ` |
-| json_float  | `float         ` |
-| json_string | `std::string   ` |
-| json_array  | `array_t       ` |
-| json_object | `object_t      ` |
+- `(void*)nullptr`
+- `bool          `
+- `int           `
+- `float         `
+- `std::string   `
+- `array_t       `
+- `object_t      `
 
 Additional types:
 | Name | Underlying type |
@@ -35,7 +33,7 @@ In every other case, a `runtime_error` is thrown
 ### Access nodes
 You can access nodes of `array_t` nodes using the overloaded `operator[]` which expects a `size_t` \
 You can access nodes of `object_t` nodes using the overloaded `operator[]` which expects a `std::string`,
-if no node was found a new one is created with value `json_nil` \
+if no node was found a new one is created with value `(void*)nullptr` \
 In every other case, a `runtime_error` is thrown
 
 ### Access nodes' value
