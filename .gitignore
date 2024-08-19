@@ -1,5 +1,6 @@
 .git/*
-.reb/hash
+.reb/*
+!.reb/config.json
 
 obj/*
 build/*

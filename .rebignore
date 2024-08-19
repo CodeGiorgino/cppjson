@@ -1,5 +1,4 @@
 .reb/*
-!.reb/config.json
 .git/*
 
 obj/*
