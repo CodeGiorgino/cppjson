@@ -10,8 +10,8 @@ mkdir build
 mkdir build/include
 
 # compilation
-g++ -Wall -Wextra -std=c++23 -c -O2 -o obj/cppjson.o src/cppjson.cpp
-g++ -Wall -Wextra -std=c++23 -c -O2 -o obj/parser.o src/parser.cpp
+g++ -Wall -Wextra -std=c++23 -c -o obj/cppjson.o src/cppjson.cpp
+g++ -Wall -Wextra -std=c++23 -c -o obj/parser.o src/parser.cpp
 
 # linking
 ar rvs -o build/cppjson.a -- obj/cppjson.o obj/parser.o
