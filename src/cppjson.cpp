@@ -55,18 +55,18 @@ json_node::json_node(const json_node& node) noexcept {
 }
 
 json_node::operator bool() const {
-    if (auto* ptr = std::get_if<bool>(&_value)) return *ptr;
-    throw std::bad_cast();
+    if (!std::holds_alternative<bool>(_value)) throw std::bad_cast();
+    return std::get<bool>(_value);
 }
 
 json_node::operator int() const {
-    if (auto* ptr = std::get_if<int>(&_value)) return *ptr;
-    throw std::bad_cast();
+    if (!std::holds_alternative<int>(_value)) throw std::bad_cast();
+    return std::get<int>(_value);
 }
 
 json_node::operator float() const {
-    if (auto* ptr = std::get_if<float>(&_value)) return *ptr;
-    throw std::bad_cast();
+    if (!std::holds_alternative<float>(_value)) throw std::bad_cast();
+    return std::get<float>(_value);
 }
 
 json_node::operator std::string() const {
