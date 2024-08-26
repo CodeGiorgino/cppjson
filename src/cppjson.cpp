@@ -2,13 +2,24 @@
 
 #include <bits/ranges_util.h>
 
-#include <cassert>
 #include <cstddef>
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <typeinfo>
+#include <utility>
 #include <variant>
+
+using string = std::string;
+
+auto pad_left(const string& source, size_t size) noexcept -> std::string {
+    string retval{};
+    for (size_t i = 0; i < size; ++i) retval += ' ';
+    return retval + source;
+}
+
+auto pad_left(const char* source, size_t size) noexcept -> string {
+    return pad_left(string{source}, size);
+}
 
 namespace json {
 json_node::json_node() noexcept {
@@ -18,73 +29,39 @@ json_node::json_node() noexcept {
 json_node::json_node(const bool& value) noexcept {
     _value = value;
 }
-
 json_node::json_node(const int& value) noexcept {
     _value = value;
 }
-
 json_node::json_node(const float& value) noexcept {
     _value = value;
 }
-
-json_node::json_node(const char* value) noexcept {
-    _value = std::make_shared<std::string>(value);
-}
-
 json_node::json_node(const std::string& value) noexcept {
     _value = std::make_shared<std::string>(value);
 }
-
 json_node::json_node(const array_t& value) noexcept {
     _value = std::make_shared<array_t>(value);
 }
-
 json_node::json_node(const object_t& value) noexcept {
     _value = std::make_shared<object_t>(value);
 }
 
-json_node::json_node(const json_node& node) noexcept {
-    if (std::holds_alternative<std::shared_ptr<std::string>>(node._value))
-        _value = std::make_shared<std::string>((std::string)node);
-    else if (std::holds_alternative<std::shared_ptr<array_t>>(node._value))
-        _value = std::make_shared<array_t>((array_t)node);
-    else if (std::holds_alternative<std::shared_ptr<object_t>>(node._value))
-        _value = std::make_shared<object_t>((object_t)node);
-    else
-        _value = node._value;
+json_node::json_node(bool&& value) noexcept {
+    _value = std::move(value);
 }
-
-json_node::operator bool() const {
-    if (!std::holds_alternative<bool>(_value)) throw std::bad_cast();
-    return std::get<bool>(_value);
+json_node::json_node(int&& value) noexcept {
+    _value = std::move(value);
 }
-
-json_node::operator int() const {
-    if (!std::holds_alternative<int>(_value)) throw std::bad_cast();
-    return std::get<int>(_value);
+json_node::json_node(float&& value) noexcept {
+    _value = std::move(value);
 }
-
-json_node::operator float() const {
-    if (!std::holds_alternative<float>(_value)) throw std::bad_cast();
-    return std::get<float>(_value);
+json_node::json_node(std::string&& value) noexcept {
+    _value = std::make_shared<std::string>(value);
 }
-
-json_node::operator std::string() const {
-    if (!std::holds_alternative<std::shared_ptr<std::string>>(_value))
-        throw std::bad_cast();
-    return *std::get<std::shared_ptr<std::string>>(_value);
+json_node::json_node(array_t&& value) noexcept {
+    _value = std::make_shared<array_t>(value);
 }
-
-json_node::operator array_t() const {
-    if (!std::holds_alternative<std::shared_ptr<array_t>>(_value))
-        throw std::bad_cast();
-    return *std::get<std::shared_ptr<array_t>>(_value);
-}
-
-json_node::operator object_t() const {
-    if (!std::holds_alternative<std::shared_ptr<object_t>>(_value))
-        throw std::bad_cast();
-    return *std::get<std::shared_ptr<object_t>>(_value);
+json_node::json_node(object_t&& value) noexcept {
+    _value = std::make_shared<object_t>(value);
 }
 
 auto json_node::operator[](const size_t& index) -> json_node& {
@@ -104,10 +81,10 @@ auto json_node::operator[](const size_t& index) -> json_node& {
 }
 
 auto json_node::operator[](const char* key) -> json_node& {
-    return (*this)[std::string{key}];
+    return (*this)[string{key}];
 }
 
-auto json_node::operator[](const std::string& key) -> json_node& {
+auto json_node::operator[](const string& key) -> json_node& {
     if (!std::holds_alternative<std::shared_ptr<object_t>>(_value))
         throw std::runtime_error(
             "cannot access node by key\r\n"
@@ -140,66 +117,7 @@ auto json_node::operator<<(const entry_t& entry) -> json_node& {
     return (*ptr)[entry.first];
 }
 
-auto json_node::operator=(const json_node& node) noexcept -> json_node& {
-    if (std::holds_alternative<std::shared_ptr<std::string>>(node._value))
-        _value = std::make_shared<std::string>((std::string)node);
-    else if (std::holds_alternative<std::shared_ptr<array_t>>(node._value))
-        _value = std::make_shared<array_t>((array_t)node);
-    else if (std::holds_alternative<std::shared_ptr<object_t>>(node._value))
-        _value = std::make_shared<object_t>((object_t)node);
-    else
-        _value = node._value;
-
-    return *this;
-}
-
-auto json_node::operator=(const bool& value) noexcept -> json_node& {
-    _value = value;
-    return *this;
-}
-
-auto json_node::operator=(const int& value) noexcept -> json_node& {
-    _value = value;
-    return *this;
-}
-
-auto json_node::operator=(const float& value) noexcept -> json_node& {
-    _value = value;
-    return *this;
-}
-
-auto json_node::operator=(const char* value) noexcept -> json_node& {
-    _value = std::make_shared<std::string>(value);
-    return *this;
-}
-
-auto json_node::operator=(const std::string& value) noexcept -> json_node& {
-    _value = std::make_shared<std::string>(value);
-    return *this;
-}
-
-auto json_node::operator=(const array_t& value) noexcept -> json_node& {
-    _value = std::make_shared<array_t>(value);
-    return *this;
-}
-
-auto json_node::operator=(const object_t& value) noexcept -> json_node& {
-    _value = std::make_shared<object_t>(value);
-    return *this;
-}
-
-auto pad_left(const std::string& source, size_t size) noexcept -> std::string {
-    std::string retval{};
-    for (size_t i = 0; i < size; ++i) retval += ' ';
-    return retval + source;
-}
-
-auto pad_left(const char* source, size_t size) noexcept -> std::string {
-    return pad_left(std::string{source}, size);
-}
-
-auto json_node::dump(size_t indent, size_t level) const noexcept
-    -> std::string {
+auto json_node::dump(size_t indent, size_t level) const noexcept -> string {
     if (std::holds_alternative<void*>(_value))
         return "null";
     else if (std::holds_alternative<bool>(_value))
@@ -208,10 +126,10 @@ auto json_node::dump(size_t indent, size_t level) const noexcept
         return std::to_string((int)(*this));
     else if (std::holds_alternative<float>(_value))
         return std::to_string((float)(*this));
-    else if (std::holds_alternative<std::shared_ptr<std::string>>(_value))
-        return "\"" + (std::string)(*this) + "\"";
+    else if (std::holds_alternative<std::shared_ptr<string>>(_value))
+        return "\"" + (string)(*this) + "\"";
     else if (std::holds_alternative<std::shared_ptr<array_t>>(_value)) {
-        std::string retval{"["};
+        string retval{"["};
         if (indent != 0) retval += "\r\n";
 
         for (const auto& entry : (array_t)(*this)) {
@@ -232,7 +150,7 @@ auto json_node::dump(size_t indent, size_t level) const noexcept
                                   : level - 1));
         return retval + "]";
     } else if (std::holds_alternative<std::shared_ptr<object_t>>(_value)) {
-        std::string retval{"{"};
+        string retval{"{"};
         if (indent != 0) retval += "\r\n";
 
         for (const auto& [key, value] : (object_t)(*this)) {

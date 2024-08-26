@@ -135,20 +135,20 @@ auto deserialize(std::string raw) -> json_node {
 
     else {
         if (raw == "true")
-            return json_node(true);
+            return json_node{true};
 
         else if (raw == "false")
-            return json_node(false);
+            return json_node{false};
 
         else if (std::regex_match(raw, std::regex("^-?[0-9]+$")))
-            return json_node(std::stoi(raw));
+            return json_node{std::stoi(raw)};
 
         else if (std::regex_match(raw, std::regex("^-?[0-9]+\\.[0-9]+$")))
-            return json_node(std::stof(raw));
+            return json_node{std::stof(raw)};
 
         else if (std::smatch match;
                  std::regex_search(raw, match, std::regex("^\"(.+)\"$")))
-            return json_node(match[1]);
+            return json_node{match[1]};
         else
             throw std::invalid_argument("cannot parse '" + raw +
                                         "' as a json value");
