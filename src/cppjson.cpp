@@ -3,6 +3,7 @@
 #include <bits/ranges_util.h>
 
 #include <cstddef>
+#include <cstdio>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -101,9 +102,18 @@ auto json_node::operator<<(const json_node& node) -> json_node& {
             "cannot insert node\r\n"
             "-- not an array_t");
 
-    auto ptr = std::get<std::shared_ptr<array_t>>(_value);
-    ptr->push_back(node);
-    return ptr->back();
+    std::get<std::shared_ptr<array_t>>(_value)->push_back(node);
+    return *this;
+}
+
+auto json_node::operator<<(json_node&& node) -> json_node& {
+    if (!std::holds_alternative<std::shared_ptr<array_t>>(_value))
+        throw std::runtime_error(
+            "cannot insert node\r\n"
+            "-- not an array_t");
+
+    std::get<std::shared_ptr<array_t>>(_value)->push_back(std::move(node));
+    return *this;
 }
 
 auto json_node::operator<<(const entry_t& entry) -> json_node& {
@@ -112,9 +122,20 @@ auto json_node::operator<<(const entry_t& entry) -> json_node& {
             "cannot insert node\r\n"
             "-- not an object_t");
 
-    auto ptr = std::get<std::shared_ptr<object_t>>(_value);
-    ptr->try_emplace(entry.first, entry.second);
-    return (*ptr)[entry.first];
+    std::get<std::shared_ptr<object_t>>(_value)->try_emplace(entry.first,
+                                                             entry.second);
+    return *this;
+}
+
+auto json_node::operator<<(entry_t&& entry) -> json_node& {
+    if (!std::holds_alternative<std::shared_ptr<object_t>>(_value))
+        throw std::runtime_error(
+            "cannot insert node\r\n"
+            "-- not an object_t");
+
+    std::get<std::shared_ptr<object_t>>(_value)->try_emplace(
+        entry.first, std::move(entry.second));
+    return *this;
 }
 
 auto json_node::dump(size_t indent, size_t level) const noexcept -> string {

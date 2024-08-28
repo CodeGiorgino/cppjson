@@ -53,7 +53,7 @@ struct json_node final {
     /* Type cast overload */
    public:
     template <typename Tp>
-    operator Tp() const {
+    [[nodiscard]] operator Tp() const {
         if (auto value = try_get_value<Tp>(); value.has_value())
             return value.value();
         throw std::bad_cast();
@@ -66,7 +66,7 @@ struct json_node final {
      * @param key The index of the node
      * @return The node reference
      */
-    auto operator[](const size_t &index) -> json_node &;
+    [[nodiscard]] auto operator[](const size_t &index) -> json_node &;
 
     /**
      * @brief Access the specified object node
@@ -74,7 +74,7 @@ struct json_node final {
      * @param key The key of the node
      * @return The node reference
      */
-    auto operator[](const char *key) -> json_node &;
+    [[nodiscard]] auto operator[](const char *key) -> json_node &;
 
     /**
      * @brief Access the specified object node
@@ -82,7 +82,7 @@ struct json_node final {
      * @param key The key of the node
      * @return The node reference
      */
-    auto operator[](const std::string &key) -> json_node &;
+    [[nodiscard]] auto operator[](const std::string &key) -> json_node &;
 
     /**
      * @brief Append the given node to an array_t
@@ -93,12 +93,28 @@ struct json_node final {
     auto operator<<(const json_node &node) -> json_node &;
 
     /**
+     * @brief Append and move the given node to an array_t
+     *
+     * @param node The node to append
+     * @return The appended node
+     */
+    auto operator<<(json_node &&node) -> json_node &;
+
+    /**
      * @brief Emplace the given node to an object_t
      *
      * @param entry The entry to emplace
      * @return The emplaced node
      */
     auto operator<<(const entry_t &entry) -> json_node &;
+
+    /**
+     * @brief Emplace and move the given node to an object_t
+     *
+     * @param entry The entry to emplace
+     * @return The emplaced node
+     */
+    auto operator<<(entry_t &&entry) -> json_node &;
 
     /* Function members */
    public:
@@ -110,7 +126,8 @@ struct json_node final {
      * @param level The indentation level
      * @return The serialized node
      */
-    auto dump(size_t indent, size_t level = 0) const noexcept -> std::string;
+    [[nodiscard]] auto dump(size_t indent, size_t level = 0) const noexcept
+        -> std::string;
 
     /**
      * @brief Set the object to hold a null value
@@ -124,7 +141,7 @@ struct json_node final {
      *
      * @return If the value is set to null
      */
-    auto is_null() const noexcept -> bool;
+    [[nodiscard]] auto is_null() const noexcept -> bool;
 
     /**
      * @brief Try to get the json_node value
@@ -133,7 +150,7 @@ struct json_node final {
      * @return The json_node value or std::nullopt
      */
     template <typename Tp>
-    auto try_get_value() const noexcept -> std::optional<Tp> {
+    [[nodiscard]] auto try_get_value() const noexcept -> std::optional<Tp> {
         static_assert(std::__detail::__variant::__exactly_once<
                           Tp, bool, int, float, std::string, array_t, object_t>,
                       "T must occur exactly once in json_value alternatives");
