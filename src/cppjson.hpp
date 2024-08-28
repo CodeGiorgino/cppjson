@@ -154,13 +154,6 @@ struct json_node final {
         static_assert(std::__detail::__variant::__exactly_once<
                           Tp, bool, int, float, std::string, array_t, object_t>,
                       "T must occur exactly once in json_value alternatives");
-
-        if constexpr (std::__detail::__variant::__exactly_once<Tp, bool, int,
-                                                               float>)
-            return std::get<Tp>(_value);
-        else
-            return *std::get<std::shared_ptr<Tp>>(_value);
-
         return std::nullopt;
     }
 
@@ -168,4 +161,20 @@ struct json_node final {
     /* The node value */
     json_value _value;
 };
+
+template <>
+auto json_node::try_get_value<bool>() const noexcept -> std::optional<bool>;
+template <>
+auto json_node::try_get_value<int>() const noexcept -> std::optional<int>;
+template <>
+auto json_node::try_get_value<float>() const noexcept -> std::optional<float>;
+template <>
+auto json_node::try_get_value<std::string>() const noexcept
+    -> std::optional<std::string>;
+template <>
+auto json_node::try_get_value<array_t>() const noexcept
+    -> std::optional<array_t>;
+template <>
+auto json_node::try_get_value<object_t>() const noexcept
+    -> std::optional<object_t>;
 }  // namespace json

@@ -5,21 +5,20 @@
 #include <cstddef>
 #include <cstdio>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <variant>
 
-using string = std::string;
-
-auto pad_left(const string& source, size_t size) noexcept -> std::string {
-    string retval{};
+auto pad_left(const std::string& source, size_t size) noexcept -> std::string {
+    std::string retval{};
     for (size_t i = 0; i < size; ++i) retval += ' ';
     return retval + source;
 }
 
-auto pad_left(const char* source, size_t size) noexcept -> string {
-    return pad_left(string{source}, size);
+auto pad_left(const char* source, size_t size) noexcept -> std::string {
+    return pad_left(std::string{source}, size);
 }
 
 namespace json {
@@ -82,10 +81,10 @@ auto json_node::operator[](const size_t& index) -> json_node& {
 }
 
 auto json_node::operator[](const char* key) -> json_node& {
-    return (*this)[string{key}];
+    return (*this)[std::string{key}];
 }
 
-auto json_node::operator[](const string& key) -> json_node& {
+auto json_node::operator[](const std::string& key) -> json_node& {
     if (!std::holds_alternative<std::shared_ptr<object_t>>(_value))
         throw std::runtime_error(
             "cannot access node by key\r\n"
@@ -138,7 +137,8 @@ auto json_node::operator<<(entry_t&& entry) -> json_node& {
     return *this;
 }
 
-auto json_node::dump(size_t indent, size_t level) const noexcept -> string {
+auto json_node::dump(size_t indent, size_t level) const noexcept
+    -> std::string {
     if (std::holds_alternative<void*>(_value))
         return "null";
     else if (std::holds_alternative<bool>(_value))
@@ -147,10 +147,10 @@ auto json_node::dump(size_t indent, size_t level) const noexcept -> string {
         return std::to_string((int)(*this));
     else if (std::holds_alternative<float>(_value))
         return std::to_string((float)(*this));
-    else if (std::holds_alternative<std::shared_ptr<string>>(_value))
-        return "\"" + (string)(*this) + "\"";
+    else if (std::holds_alternative<std::shared_ptr<std::string>>(_value))
+        return "\"" + (std::string)(*this) + "\"";
     else if (std::holds_alternative<std::shared_ptr<array_t>>(_value)) {
-        string retval{"["};
+        std::string retval{"["};
         if (indent != 0) retval += "\r\n";
 
         for (const auto& entry : (array_t)(*this)) {
@@ -171,7 +171,7 @@ auto json_node::dump(size_t indent, size_t level) const noexcept -> string {
                                   : level - 1));
         return retval + "]";
     } else if (std::holds_alternative<std::shared_ptr<object_t>>(_value)) {
-        string retval{"{"};
+        std::string retval{"{"};
         if (indent != 0) retval += "\r\n";
 
         for (const auto& [key, value] : (object_t)(*this)) {
@@ -204,5 +204,42 @@ auto json_node::set_null() noexcept -> json_node& {
 
 auto json_node::is_null() const noexcept -> bool {
     return std::holds_alternative<void*>(_value);
+}
+
+template <>
+auto json_node::try_get_value<bool>() const noexcept -> std::optional<bool> {
+    if (std::holds_alternative<bool>(_value)) return std::get<bool>(_value);
+    return std::nullopt;
+}
+template <>
+auto json_node::try_get_value<int>() const noexcept -> std::optional<int> {
+    if (std::holds_alternative<int>(_value)) return std::get<int>(_value);
+    return std::nullopt;
+}
+template <>
+auto json_node::try_get_value<float>() const noexcept -> std::optional<float> {
+    if (std::holds_alternative<float>(_value)) return std::get<float>(_value);
+    return std::nullopt;
+}
+template <>
+auto json_node::try_get_value<std::string>() const noexcept
+    -> std::optional<std::string> {
+    if (std::holds_alternative<std::shared_ptr<std::string>>(_value))
+        return *std::get<std::shared_ptr<std::string>>(_value);
+    return std::nullopt;
+}
+template <>
+auto json_node::try_get_value<array_t>() const noexcept
+    -> std::optional<array_t> {
+    if (std::holds_alternative<std::shared_ptr<array_t>>(_value))
+        return *std::get<std::shared_ptr<array_t>>(_value);
+    return std::nullopt;
+}
+template <>
+auto json_node::try_get_value<object_t>() const noexcept
+    -> std::optional<object_t> {
+    if (std::holds_alternative<std::shared_ptr<object_t>>(_value))
+        return *std::get<std::shared_ptr<object_t>>(_value);
+    return std::nullopt;
 }
 }  // namespace json
