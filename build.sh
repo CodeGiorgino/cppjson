@@ -11,12 +11,12 @@ function do_build() {
     mkdir build/include
 
     # compilation
-    g++ -Wall -Wextra -std=c++23 -c -$OPT_LEVEL -o obj/cppjson.o src/cppjson.cpp
+    # g++ -Wall -Wextra -std=c++23 -c -$OPT_LEVEL -o obj/cppjson.o src/cppjson.cpp
     g++ -Wall -Wextra -std=c++23 -c -$OPT_LEVEL -o obj/parser.o src/parser.cpp
 
     # linking
     ar rs -o build/cppjson.a -- obj/cppjson.o obj/parser.o
-    cp src/cppjson.hpp src/parser.hpp -- build/include/
+    # cp src/cppjson.hpp src/parser.hpp -- build/include/
 }
 
 function do_clean() {
