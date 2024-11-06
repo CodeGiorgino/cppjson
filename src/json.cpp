@@ -1,23 +1,47 @@
 #include "json.hpp"
 
+#include <filesystem>
+#include <memory>
+#include <stdexcept>
+
+#define UNUSED(var) (void)var
+#define TODO() throw std::logic_error("Function not implemented yet")
+
+/* json_node implementation */
 namespace json {
-json_field::json_field(const char* key, std::any value)
-    : _key(key), _value(value) {}
+json_node::json_node()
+    : _key(NULL), _tag(value_tag::JsonNull), _value((void*)NULL) {}
 
-json_field::json_field(const char* key,
-                       std::initializer_list<json_field> fields)
-    : _key(key) {
-    for (const auto& field : fields) {
-        if (_fields.contains(field._key))
-            throw std::invalid_argument(
-                std::format("error: cannot insert multiple fields with the "
-                            "same key: `{}`",
-                            field._key));
+json_node::json_node(const char* key, value_tag tag, value_t value)
+    : _key(key), _tag(tag), _value(value) {}
 
-        _fields.emplace(_key, std::make_shared<json_field>(field));
-    }
+auto json_node::key() const noexcept -> const char* {
+    return _key;
 }
 
-json_doc::json_doc(json_field root)
-    : _root(std::make_shared<json_field>(root)) {}
+auto json_node::tag() const noexcept -> value_tag {
+    return _tag;
+}
+
+auto json_node::value() const noexcept -> value_t {
+    return _value;
+}
+}  // namespace json
+
+/* json_doc implementation */
+namespace json {
+json_doc::json_doc(std::filesystem::path filepath) {
+    UNUSED(filepath);
+    TODO();
+}
+
+json_doc::json_doc(json_node root) : _root(std::make_shared<json_node>(root)) {}
+
+json_doc::json_doc(json_node&& root)
+    : _root(std::make_shared<json_node>(std::move(root))) {}
+
+auto json_doc::load_file(std::filesystem::path filepath) -> bool {
+    UNUSED(filepath);
+    TODO();
+}
 }  // namespace json

@@ -5,18 +5,25 @@ function do_build() {
     # ensure targets
     [ -d obj ] && rm -rf obj
     [ -d build ] && rm -rf build
-
     mkdir obj
     mkdir build
     mkdir build/include
 
     # compilation
-    # g++ -Wall -Wextra -std=c++23 -c -$OPT_LEVEL -o obj/cppjson.o src/cppjson.cpp
-    g++ -Wall -Wextra -std=c++23 -c -$OPT_LEVEL -o obj/parser.o src/parser.cpp
+    for file in src/*.cpp; do
+        filename="$(basename $file)"
+        filename="${filename%.*}"
+        echo "info: building file: $file"
+        g++ -Wall -Wextra -std=c++23 -c -$OPT_LEVEL -o obj/$filename.o $file
+    done
 
     # linking
-    ar rs -o build/cppjson.a -- obj/cppjson.o obj/parser.o
-    # cp src/cppjson.hpp src/parser.hpp -- build/include/
+    echo "info: linking object files"
+    objs=(obj/*.o)
+    ar rs -o build/json.a -- ${objs[@]}
+
+    hpps=(./src/*.hpp)
+    cp ${hpps[@]} -- build/include
 }
 
 function do_clean() {
@@ -36,7 +43,7 @@ elif [ $# -gt 1 ]; then
 else
     case $1 in
         -d | --debug)
-            OPT_LEVEL=g
+            OPT_LEVEL=ggdb
             echo 'info: DEBUG set to true'
             do_build
             ;;
