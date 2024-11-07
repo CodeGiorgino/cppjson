@@ -31,7 +31,7 @@ static std::vector<std::function<bool()>> tests{
         return TEST_OK();
     },
     [] {
-        auto node = json::node(json::node_tag::JsonNull, (void*)NULL);
+        auto node = json::node((void*)NULL);
         try {
             if (node.value<void*>() != NULL) return TEST_ERROR();
         } catch (const std::bad_variant_access&) {
@@ -43,7 +43,7 @@ static std::vector<std::function<bool()>> tests{
     },
     [] {
         bool value{true};
-        auto node = json::node(json::node_tag::JsonBool, value);
+        auto node = json::node(value);
         try {
             if (node.value<bool>() != value) return TEST_ERROR();
         } catch (const std::bad_variant_access&) {
@@ -55,7 +55,7 @@ static std::vector<std::function<bool()>> tests{
     },
     [] {
         int value{69};
-        auto node = json::node(json::node_tag::JsonInt, value);
+        auto node = json::node(value);
         try {
             if (node.value<int>() != value) return TEST_ERROR();
         } catch (const std::bad_variant_access&) {
@@ -67,7 +67,7 @@ static std::vector<std::function<bool()>> tests{
     },
     [] {
         float value{420.f};
-        auto node = json::node(json::node_tag::JsonFloat, value);
+        auto node = json::node(value);
         try {
             if (node.value<float>() != value) return TEST_ERROR();
         } catch (const std::bad_variant_access&) {
@@ -79,7 +79,7 @@ static std::vector<std::function<bool()>> tests{
     },
     [] {
         std::string value{"test string"};
-        auto node = json::node(json::node_tag::JsonString, value);
+        auto node = json::node(value);
         try {
             if (node.value<std::string>() != value) return TEST_ERROR();
         } catch (const std::bad_variant_access&) {

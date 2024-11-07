@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <map>
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <variant>
 #include <vector>
@@ -19,7 +20,7 @@ using value_t =
     std::variant<void*, bool, int, float, std::string, array, object>;
 
 template <class Tp>
-concept NodeConvertible = std::is_constructible_v<value_t, Tp>;
+concept is_node_convertible = std::is_constructible_v<value_t, Tp>;
 
 enum class node_tag : uint {
     JsonNull,
@@ -34,11 +35,42 @@ enum class node_tag : uint {
 class node final {
    public:
     node();
-    node(node_tag tag, value_t value);
+
+    template <is_node_convertible Tp>
+    node(Tp value) {
+        if (std::is_same_v<void*, Tp>) {
+            _tag = node_tag::JsonNull;
+            _value = (void*)NULL;
+        } else if (std::is_same_v<bool, Tp>) {
+            _tag = node_tag::JsonBool;
+            _value = value;
+        } else if (std::is_same_v<int, Tp>) {
+            _tag = node_tag::JsonInt;
+            _value = value;
+        } else if (std::is_same_v<float, Tp>) {
+            _tag = node_tag::JsonFloat;
+            _value = value;
+        } else if (std::is_same_v<std::string, Tp>) {
+            _tag = node_tag::JsonString;
+            _value = value;
+        } else if (std::is_same_v<array, Tp>) {
+            _tag = node_tag::JsonArray;
+            _value = value;
+        } else if (std::is_same_v<object, Tp>) {
+            _tag = node_tag::JsonObject;
+            _value = value;
+        } else {
+            throw std::logic_error(
+                std::format(
+                    "unreachable: constructor for type {} is not implemented",
+                    typeid(Tp).name())
+                    .c_str());
+        }
+    }
 
     [[nodiscard]] auto tag() const noexcept -> node_tag;
 
-    template <NodeConvertible Tp>
+    template <is_node_convertible Tp>
     [[nodiscard]] auto value() const -> Tp {
         return std::get<Tp>(_value);
     }

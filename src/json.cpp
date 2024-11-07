@@ -10,7 +10,6 @@
 /* json_node implementation */
 namespace json {
 node::node() : _tag(node_tag::JsonNull), _value((void*)NULL) {}
-node::node(node_tag tag, value_t value) : _tag(tag), _value(value) {}
 
 auto node::tag() const noexcept -> node_tag {
     return _tag;
