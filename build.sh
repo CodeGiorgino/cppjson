@@ -26,6 +26,28 @@ function do_build() {
     cp ${hpps[@]} -- build/include
 }
 
+function do_tests() {
+    if [ ! -d _test ]; then
+        echo 'error: cannot find folder `_test`'
+        exit 1
+    fi
+
+    if [ ! -f _test/build.sh ]; then
+        echo 'error: cannot find script file `_test/build.sh`'
+        exit 1
+    fi
+
+    # build tests
+    cd _test
+    ./build.sh
+
+    # run tests
+    for file in build/*; do
+        $file
+    done
+    cd -
+}
+
 function do_clean() {
     # remove targets
     [ -d obj ] && rm -rf obj
@@ -45,12 +67,23 @@ else
         -d | --debug)
             OPT_LEVEL=ggdb
             echo 'info: DEBUG set to true'
+            echo 'info: building source'
             do_build
             ;;
 
         --clean)
             echo 'info: cleaning the targets'
             do_clean
+            ;;
+
+        --test)
+            OPT_LEVEL=O2
+            echo 'info: DEBUG set to false'
+            echo 'info: building source'
+            do_build
+            echo 'info: building tests'
+            echo '--------------------'
+            do_tests
             ;;
 
         *)
