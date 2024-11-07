@@ -1,67 +1,68 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <filesystem>
 #include <map>
 #include <memory>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
 namespace json {
-class json_node;
-using json_node_ptr = std::shared_ptr<json_node>;
+class node;
+using node_ptr = std::shared_ptr<node>;
 
-using array_t = std::vector<json_node>;
-using object_t = std::map<const char*, json_node>;
+using array = std::vector<node>;
+using object = std::map<const char*, node>;
 
 using value_t =
-    std::variant<void*, bool, int, float, std::string, array_t, object_t>;
+    std::variant<void*, bool, int, float, std::string, array, object>;
 
-class json_node final {
+template <class Tp>
+concept NodeConvertible = std::is_constructible_v<value_t, Tp>;
+
+enum class node_tag : uint {
+    JsonNull,
+    JsonBool,
+    JsonInt,
+    JsonFloat,
+    JsonString,
+    JsonArray,
+    JsonObject
+};
+
+class node final {
    public:
-    enum class value_tag : uint8_t {
-        JsonNull,
-        JsonBool,
-        JsonInt,
-        JsonFloat,
-        JsonString,
-        JsonArray,
-        JsonObject
-    };
+    node();
+    node(node_tag tag, value_t value);
 
-   public:
-    json_node();
-    json_node(const char* key, value_tag tag, value_t value);
+    [[nodiscard]] auto tag() const noexcept -> node_tag;
 
-    [[nodiscard]]
-    auto key() const noexcept -> const char*;
-    [[nodiscard]]
-    auto tag() const noexcept -> value_tag;
-    [[nodiscard]]
-    auto value() const noexcept -> value_t;
+    template <NodeConvertible Tp>
+    [[nodiscard]] auto value() const -> Tp {
+        return std::get<Tp>(_value);
+    }
 
    private:
-    const char* _key{};
-    value_tag _tag{json_node::value_tag::JsonNull};
+    node_tag _tag{node_tag::JsonNull};
     value_t _value{(void*)NULL};
 };
 
-class json_doc final {
+class doc final {
    public:
-    json_doc() = default;
-    ~json_doc() = default;
+    doc() = default;
+    ~doc() = default;
 
-    json_doc(std::filesystem::path filepath);
-    json_doc(json_node root);
-    json_doc(json_node&& root);
+    doc(std::filesystem::path filepath);
+    doc(node root);
+    doc(node&& root);
 
     [[nodiscard]]
     auto load_file(std::filesystem::path filepath) -> bool;
-    auto load_root(json_node root) -> void;
-    auto load_root(json_node&& root) -> void;
+    auto load_root(node root) -> void;
+    auto load_root(node&& root) -> void;
 
    private:
-    json_node_ptr _root{};
+    node_ptr _root{};
 };
 }  // namespace json

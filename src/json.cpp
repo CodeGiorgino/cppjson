@@ -9,38 +9,26 @@
 
 /* json_node implementation */
 namespace json {
-json_node::json_node()
-    : _key(NULL), _tag(value_tag::JsonNull), _value((void*)NULL) {}
+node::node() : _tag(node_tag::JsonNull), _value((void*)NULL) {}
+node::node(node_tag tag, value_t value) : _tag(tag), _value(value) {}
 
-json_node::json_node(const char* key, value_tag tag, value_t value)
-    : _key(key), _tag(tag), _value(value) {}
-
-auto json_node::key() const noexcept -> const char* {
-    return _key;
-}
-
-auto json_node::tag() const noexcept -> value_tag {
+auto node::tag() const noexcept -> node_tag {
     return _tag;
-}
-
-auto json_node::value() const noexcept -> value_t {
-    return _value;
 }
 }  // namespace json
 
 /* json_doc implementation */
 namespace json {
-json_doc::json_doc(std::filesystem::path filepath) {
+doc::doc(std::filesystem::path filepath) {
     UNUSED(filepath);
     TODO();
 }
 
-json_doc::json_doc(json_node root) : _root(std::make_shared<json_node>(root)) {}
+doc::doc(node root) : _root(std::make_shared<node>(root)) {}
 
-json_doc::json_doc(json_node&& root)
-    : _root(std::make_shared<json_node>(std::move(root))) {}
+doc::doc(node&& root) : _root(std::make_shared<node>(std::move(root))) {}
 
-auto json_doc::load_file(std::filesystem::path filepath) -> bool {
+auto doc::load_file(std::filesystem::path filepath) -> bool {
     UNUSED(filepath);
     TODO();
 }

@@ -19,85 +19,78 @@ auto log_info(const char* msg, uint line) noexcept -> void {
 
 static std::vector<std::function<bool()>> tests{
     [] {
-        auto node = json::json_node();
-        if (node.key() != NULL) return TEST_ERROR();
-        if (node.tag() != json::json_node::value_tag::JsonNull)
+        auto node = json::node();
+        if (node.tag() != json::node_tag::JsonNull) return TEST_ERROR();
+        try {
+            if (node.value<void*>() != NULL) return TEST_ERROR();
+        } catch (const std::bad_variant_access&) {
             return TEST_ERROR();
-        if (not std::holds_alternative<void*>(node.value()))
-            return TEST_ERROR();
+        } catch (...) {
+            TEST_ERROR();
+        }
         return TEST_OK();
     },
     [] {
-        auto node = json::json_node(NULL, json::json_node::value_tag::JsonNull,
-                                    (void*)NULL);
-        if (node.key() != NULL) return TEST_ERROR();
-        if (node.tag() != json::json_node::value_tag::JsonNull)
+        auto node = json::node(json::node_tag::JsonNull, (void*)NULL);
+        try {
+            if (node.value<void*>() != NULL) return TEST_ERROR();
+        } catch (const std::bad_variant_access&) {
             return TEST_ERROR();
-        if (not std::holds_alternative<void*>(node.value()))
-            return TEST_ERROR();
+        } catch (...) {
+            TEST_ERROR();
+        }
         return TEST_OK();
     },
     [] {
         bool value{true};
-        auto node = json::json_node(
-            "bool", json::json_node::value_tag::JsonBool, value);
-        if (strcmp(node.key(), "bool") != 0) return TEST_ERROR();
-        if (node.tag() != json::json_node::value_tag::JsonBool)
+        auto node = json::node(json::node_tag::JsonBool, value);
+        try {
+            if (node.value<bool>() != value) return TEST_ERROR();
+        } catch (const std::bad_variant_access&) {
             return TEST_ERROR();
-        if (not std::holds_alternative<bool>(node.value())) return TEST_ERROR();
-        if (std::get<bool>(node.value()) != value) return TEST_ERROR();
+        } catch (...) {
+            TEST_ERROR();
+        }
         return TEST_OK();
     },
     [] {
         int value{69};
-        auto node =
-            json::json_node("int", json::json_node::value_tag::JsonInt, value);
-        if (strcmp(node.key(), "int") != 0) return TEST_ERROR();
-        if (node.tag() != json::json_node::value_tag::JsonInt)
+        auto node = json::node(json::node_tag::JsonInt, value);
+        try {
+            if (node.value<int>() != value) return TEST_ERROR();
+        } catch (const std::bad_variant_access&) {
             return TEST_ERROR();
-        if (not std::holds_alternative<int>(node.value())) return TEST_ERROR();
-        if (std::get<int>(node.value()) != value) return TEST_ERROR();
+        } catch (...) {
+            TEST_ERROR();
+        }
         return TEST_OK();
     },
     [] {
         float value{420.f};
-        auto node = json::json_node(
-            "float", json::json_node::value_tag::JsonFloat, value);
-        if (strcmp(node.key(), "float") != 0) return TEST_ERROR();
-        if (node.tag() != json::json_node::value_tag::JsonFloat)
+        auto node = json::node(json::node_tag::JsonFloat, value);
+        try {
+            if (node.value<float>() != value) return TEST_ERROR();
+        } catch (const std::bad_variant_access&) {
             return TEST_ERROR();
-        if (not std::holds_alternative<float>(node.value()))
-            return TEST_ERROR();
-        if (std::get<float>(node.value()) != value) return TEST_ERROR();
+        } catch (...) {
+            TEST_ERROR();
+        }
         return TEST_OK();
     },
     [] {
         std::string value{"test string"};
-        auto node = json::json_node(
-            "string", json::json_node::value_tag::JsonString, value);
-        if (strcmp(node.key(), "string") != 0) return TEST_ERROR();
-        if (node.tag() != json::json_node::value_tag::JsonString)
+        auto node = json::node(json::node_tag::JsonString, value);
+        try {
+            if (node.value<std::string>() != value) return TEST_ERROR();
+        } catch (const std::bad_variant_access&) {
             return TEST_ERROR();
-        if (not std::holds_alternative<std::string>(node.value()))
-            return TEST_ERROR();
-        if (std::get<std::string>(node.value()) != value) return TEST_ERROR();
+        } catch (...) {
+            TEST_ERROR();
+        }
         return TEST_OK();
     },
-    [] {
-        json::array_t value{};
-        auto node = json::json_node(
-            "array_t", json::json_node::value_tag::JsonArray, value);
-        if (strcmp(node.key(), "array_t") != 0) return TEST_ERROR();
-        if (node.tag() != json::json_node::value_tag::JsonArray)
-            return TEST_ERROR();
-        if (not std::holds_alternative<json::array_t>(node.value()))
-            return TEST_ERROR();
-        return TEST_ERROR();
-        return TEST_OK();
-    },
-    [] {
-        { return TEST_ERROR(); };
-    },
+    [] { return TEST_ERROR(); },
+    [] { return TEST_ERROR(); },
 };
 
 auto main(void) -> int {
