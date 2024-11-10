@@ -22,6 +22,10 @@ using value_t =
 template <class Tp>
 concept is_node_convertible = std::is_constructible_v<value_t, Tp>;
 
+constexpr auto operator"" _sz(unsigned long long sz) noexcept -> size_t {
+    return sz;
+}
+
 enum class node_tag : uint {
     JsonNull,
     JsonBool,
@@ -35,9 +39,30 @@ enum class node_tag : uint {
 class node final {
    public:
     node();
-
     template <is_node_convertible Tp>
     node(Tp value) {
+        _set_value(value);
+    }
+
+    node(const node& other) noexcept : _tag(other._tag), _value(other._value) {}
+    auto operator=(const node& other) noexcept -> node&;
+    auto operator=(node&& other) noexcept -> node&;
+
+    [[nodiscard]] auto tag() const noexcept -> node_tag;
+
+    template <is_node_convertible Tp>
+    [[nodiscard]] auto value() const -> Tp {
+        return std::get<Tp>(_value);
+    }
+
+    auto operator[](size_t idx) -> node&;
+    auto operator[](size_t idx) const -> const node&;
+    auto operator[](const char* key) -> node&;
+    auto operator[](const char* key) const -> const node&;
+
+   private:
+    template <is_node_convertible Tp>
+    auto _set_value(Tp value) -> void {
         if (std::is_same_v<void*, Tp>) {
             _tag = node_tag::JsonNull;
             _value = (void*)NULL;
@@ -66,13 +91,6 @@ class node final {
                     typeid(Tp).name())
                     .c_str());
         }
-    }
-
-    [[nodiscard]] auto tag() const noexcept -> node_tag;
-
-    template <is_node_convertible Tp>
-    [[nodiscard]] auto value() const -> Tp {
-        return std::get<Tp>(_value);
     }
 
    private:
