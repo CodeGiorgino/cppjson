@@ -1,7 +1,8 @@
 #pragma once
 
 #include <cstddef>
-#include <filesystem>
+#include <exception>
+#include <format>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -10,6 +11,17 @@
 #include <vector>
 
 namespace json {
+class node_exception final : public std::exception {
+   public:
+    node_exception(const char* msg) : _msg(msg) {}
+    auto what() const noexcept -> const char* {
+        return _msg;
+    }
+
+   private:
+    const char* _msg{};
+};
+
 class node;
 using node_ptr = std::shared_ptr<node>;
 
@@ -21,10 +33,6 @@ using value_t =
 
 template <class Tp>
 concept is_node_convertible = std::is_constructible_v<value_t, Tp>;
-
-constexpr auto operator"" _sz(unsigned long long sz) noexcept -> size_t {
-    return sz;
-}
 
 enum class node_tag : uint {
     JsonNull,
@@ -38,7 +46,7 @@ enum class node_tag : uint {
 
 class node final {
    public:
-    node();
+    node() noexcept;
     template <is_node_convertible Tp>
     node(Tp value) {
         _set_value(value);
@@ -55,10 +63,10 @@ class node final {
         return std::get<Tp>(_value);
     }
 
-    auto operator[](size_t idx) -> node&;
-    auto operator[](size_t idx) const -> const node&;
-    auto operator[](const char* key) -> node&;
-    auto operator[](const char* key) const -> const node&;
+    auto at(uint idx) -> node&;
+    auto at(uint idx) const -> const node&;
+    auto field(const char* key) -> node&;
+    auto field(const char* key) const -> const node&;
 
    private:
     template <is_node_convertible Tp>
@@ -103,14 +111,17 @@ class doc final {
     doc() = default;
     ~doc() = default;
 
-    doc(std::filesystem::path filepath);
-    doc(node root);
-    doc(node&& root);
+    doc(const char* filepath);
+    doc(node root) noexcept;
+    doc(node&& root) noexcept;
 
     [[nodiscard]]
-    auto load_file(std::filesystem::path filepath) -> bool;
-    auto load_root(node root) -> void;
-    auto load_root(node&& root) -> void;
+    auto load_file(const char* filepath) noexcept -> bool;
+    auto load_root(node root) noexcept -> void;
+    auto load_root(node&& root) noexcept -> void;
+
+    [[nodiscard]]
+    auto dump() const noexcept -> std::string;
 
    private:
     node_ptr _root{};

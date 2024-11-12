@@ -9,7 +9,6 @@
 #include <stdexcept>
 #include <variant>
 #include <vector>
-using json::operator""_sz;
 
 auto log_info(const char* msg, uint line) noexcept -> void {
     std::cout << std::format("> {}:{}:\tinfo: {}", __FILE__, line, msg)
@@ -97,9 +96,49 @@ static std::vector<std::function<bool()>> tests{
         return TEST_OK();
     },
     [] {
+        json::node node{1};
+        try {
+            const auto& _ = node.at(0);
+        } catch (const json::node_exception&) {
+        } catch (...) {
+            return TEST_ERROR();
+        }
+        return TEST_OK();
+    },
+    [] {
+        json::node node{1};
+        try {
+            auto& _ = node.at(0);
+        } catch (const json::node_exception&) {
+        } catch (...) {
+            return TEST_ERROR();
+        }
+        return TEST_OK();
+    },
+    [] {
+        json::node node{1};
+        try {
+            auto& _ = node.field("first");
+        } catch (const json::node_exception&) {
+        } catch (...) {
+            return TEST_ERROR();
+        }
+        return TEST_OK();
+    },
+    [] {
+        json::node node{1};
+        try {
+            const auto& _ = node.field("first");
+        } catch (const json::node_exception&) {
+        } catch (...) {
+            return TEST_ERROR();
+        }
+        return TEST_OK();
+    },
+    [] {
         json::node node{json::array{json::node(), json::node(), json::node()}};
         try {
-            auto& _ = node[3_sz];
+            auto& _ = node.at(3);
         } catch (const std::out_of_range&) {
         } catch (...) {
             return TEST_ERROR();
@@ -109,7 +148,7 @@ static std::vector<std::function<bool()>> tests{
     [] {
         json::node node{json::array{json::node(), json::node(), json::node()}};
         try {
-            const auto& _ = node[3_sz];
+            const auto& _ = node.at(3);
         } catch (const std::out_of_range&) {
         } catch (...) {
             return TEST_ERROR();
@@ -119,7 +158,7 @@ static std::vector<std::function<bool()>> tests{
     [] {
         json::node node{json::object{{"first", json::node()}}};
         try {
-            auto& _ = node["second"];
+            auto& _ = node.field("second");
         } catch (const std::out_of_range&) {
         } catch (...) {
             return TEST_ERROR();
@@ -129,17 +168,7 @@ static std::vector<std::function<bool()>> tests{
     [] {
         json::node node{json::object{{"first", json::node()}}};
         try {
-            auto& _ = node["second"];
-        } catch (const std::out_of_range&) {
-        } catch (...) {
-            return TEST_ERROR();
-        }
-        return TEST_OK();
-    },
-    [] {
-        json::node node{json::array{json::node(), json::node(), json::node()}};
-        try {
-            const auto& _ = node[3_sz];
+            const auto& _ = node.field("second");
         } catch (const std::out_of_range&) {
         } catch (...) {
             return TEST_ERROR();
@@ -158,11 +187,11 @@ static std::vector<std::function<bool()>> tests{
         } catch (...) {
             return TEST_ERROR();
         }
-        if (node[0_sz].value<void*>() != value[0].value<void*>())
+        if (node.at(0).value<void*>() != value[0].value<void*>())
             return TEST_ERROR();
-        if (node[1_sz].value<int>() != value[1].value<int>())
+        if (node.at(1).value<int>() != value[1].value<int>())
             return TEST_ERROR();
-        if (node[2_sz].value<float>() != value[2].value<float>())
+        if (node.at(2).value<float>() != value[2].value<float>())
             return TEST_ERROR();
         return TEST_OK();
     },
@@ -180,25 +209,25 @@ static std::vector<std::function<bool()>> tests{
         } catch (...) {
             return TEST_ERROR();
         }
-        if (node["first"].value<void*>() != value["first"].value<void*>())
+        if (node.field("first").value<void*>() != value["first"].value<void*>())
             return TEST_ERROR();
-        if (node["second"].value<int>() != value["second"].value<int>())
+        if (node.field("second").value<int>() != value["second"].value<int>())
             return TEST_ERROR();
-        if (node["third"].value<float>() != value["third"].value<float>())
+        if (node.field("third").value<float>() != value["third"].value<float>())
             return TEST_ERROR();
         return TEST_OK();
     },
     [] {
         auto node = json::node{json::array{json::node{69}, json::node{420.f}}};
-        if (node[0_sz].value<int>() != 69) return TEST_ERROR();
-        if (node[1_sz].value<float>() != 420.f) return TEST_ERROR();
+        if (node.at(0).value<int>() != 69) return TEST_ERROR();
+        if (node.at(1).value<float>() != 420.f) return TEST_ERROR();
         return TEST_OK();
     },
     [] {
         auto value = json::node{json::array{json::node{69}, json::node{420.f}}};
         auto node = value;
-        if (node[0_sz].value<int>() != 69) return TEST_ERROR();
-        if (node[1_sz].value<float>() != 420.f) return TEST_ERROR();
+        if (node.at(0).value<int>() != 69) return TEST_ERROR();
+        if (node.at(1).value<float>() != 420.f) return TEST_ERROR();
         return TEST_OK();
     },
 };

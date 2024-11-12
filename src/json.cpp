@@ -1,8 +1,6 @@
 #include "json.hpp"
 
-#include <filesystem>
 #include <format>
-#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <utility>
@@ -26,17 +24,15 @@ auto node::operator=(node&& other) noexcept -> node& {
     return *this;
 }
 
-node::node() : _tag(node_tag::JsonNull), _value((void*)NULL) {}
+node::node() noexcept : _tag(node_tag::JsonNull), _value((void*)NULL) {}
 
 auto node::tag() const noexcept -> node_tag {
     return _tag;
 }
 
-auto node::operator[](size_t idx) -> node& {
+auto node::at(uint idx) -> node& {
     if (_tag != node_tag::JsonArray)
-        throw std::runtime_error(
-            std::format("cannot access node value field by index of type `{}`",
-                        typeid(idx).name()));
+        throw node_exception("cannot access non-array nodes items");
 
     auto& value{std::get<array>(_value)};
     if (idx >= value.size())
@@ -48,11 +44,9 @@ auto node::operator[](size_t idx) -> node& {
     return value[idx];
 }
 
-auto node::operator[](size_t idx) const -> const node& {
+auto node::at(uint idx) const -> const node& {
     if (_tag != node_tag::JsonArray)
-        throw std::runtime_error(
-            std::format("cannot access node value field by index of type `{}`",
-                        typeid(idx).name()));
+        throw node_exception("cannot access non-array nodes items");
 
     const auto& value{std::get<array>(_value)};
     if (idx >= value.size())
@@ -64,11 +58,9 @@ auto node::operator[](size_t idx) const -> const node& {
     return value[idx];
 }
 
-auto node::operator[](const char* key) -> node& {
+auto node::field(const char* key) -> node& {
     if (_tag != node_tag::JsonObject)
-        throw std::runtime_error(
-            std::format("cannot access node value field by key of type `{}`",
-                        typeid(key).name()));
+        throw node_exception("cannot access non-object nodes fields");
 
     auto& value{std::get<object>(_value)};
     if (not value.contains(key))
@@ -78,11 +70,9 @@ auto node::operator[](const char* key) -> node& {
     return value.at(key);
 }
 
-auto node::operator[](const char* key) const -> const node& {
+auto node::field(const char* key) const -> const node& {
     if (_tag != node_tag::JsonObject)
-        throw std::runtime_error(
-            std::format("cannot access node value field by key of type `{}`",
-                        typeid(key).name()));
+        throw node_exception("cannot access non-object nodes fields");
 
     const auto& value{std::get<object>(_value)};
     if (not value.contains(key))
@@ -95,16 +85,29 @@ auto node::operator[](const char* key) const -> const node& {
 
 /* json_doc implementation */
 namespace json {
-doc::doc(std::filesystem::path filepath) {
+doc::doc(const char* filepath) {
     UNUSED(filepath);
-    TODO("json::doc::doc(std::filesystem::path)");
+    TODO("json::doc::doc(const char*)");
 }
 
-auto doc::load_file(std::filesystem::path filepath) -> bool {
+doc::doc(node root) noexcept : _root(std::make_shared<node>(root)) {}
+doc::doc(node&& root) noexcept
+    : _root(std::make_shared<node>(std::move(root))) {}
+
+auto doc::load_file(const char* filepath) noexcept -> bool {
     UNUSED(filepath);
-    TODO("json::doc::load_file(std::filesystem::path)");
+    TODO("json::doc::load_file(const char*)");
 }
 
-doc::doc(node root) : _root(std::make_shared<node>(root)) {}
-doc::doc(node&& root) : _root(std::make_shared<node>(std::move(root))) {}
+auto doc::load_root(node root) noexcept -> void {
+    _root = std::make_shared<node>(root);
+}
+
+auto doc::load_root(node&& root) noexcept -> void {
+    _root = std::make_shared<node>(std::move(root));
+}
+
+auto doc::dump() const noexcept -> std::string {
+    TODO("json::doc::dump()");
+}
 }  // namespace json
