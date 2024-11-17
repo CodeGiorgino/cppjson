@@ -5,18 +5,12 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <iomanip>
 #include <ios>
 #include <iostream>
 #include <regex>
 #include <string>
 
 #include "json.hpp"
-
-#define UNUSED(var) (void)var
-#define TODO(name)          \
-    throw std::logic_error( \
-        std::format("Function not implemented yet: `{}`", name))
 
 namespace json {
 auto parse_array(const std::string& source, uint& idx) -> node;
@@ -86,6 +80,11 @@ auto parse_array(const std::string& source, uint& idx) -> node {
     bool isClosed{false};
     while (const auto& ch = source[++idx]) {
         if (isspace(ch) || ch == '\r' || ch == '\n') continue;
+        if (ch == ']') {
+            isClosed = true;
+            break;
+        }
+
         if (ch == ',') {
             if (itemsCount != 0) continue;
             throw invalid_json_exception(
@@ -97,7 +96,7 @@ auto parse_array(const std::string& source, uint& idx) -> node {
         retval.push_back(parse_value(source, idx));
         itemsCount++;
 
-        if (source[idx] == ']') {
+        if (source[idx] == ']' && retval.back().tag() != node_tag::JsonArray) {
             isClosed = true;
             break;
         }
@@ -118,6 +117,11 @@ auto parse_object(const std::string& source, uint& idx) -> node {
     bool isClosed{false};
     while (const auto& ch = source[++idx]) {
         if (isspace(ch) || ch == '\r' || ch == '\n') continue;
+        if (ch == '}') {
+            isClosed = true;
+            break;
+        }
+
         if (ch == ',') {
             if (itemsCount != 0) continue;
             throw invalid_json_exception(
@@ -171,7 +175,8 @@ auto parse_object(const std::string& source, uint& idx) -> node {
         itemsCount++;
 
         // FIXME: last child object
-        if (source[idx] == '}') {
+        if (source[idx] == '}' &&
+            retval.at(key).tag() != node_tag::JsonObject) {
             isClosed = true;
             break;
         }
@@ -184,7 +189,7 @@ auto parse_object(const std::string& source, uint& idx) -> node {
     return node{retval};
 }
 
-auto deserialize(const char* filepath) -> node {
+auto deserialize_file(const char* filepath) -> node {
     std::filesystem::path path{filepath};
     if (!std::filesystem::exists(path))
         throw invalid_json_exception(

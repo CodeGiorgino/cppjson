@@ -16,7 +16,7 @@ class invalid_json_exception final : public std::exception {
 };
 
 [[nodiscard]]
-auto deserialize(const char* filepath) -> node;
+auto deserialize_file(const char* filepath) -> node;
 [[nodiscard]]
 auto deserialize(std::string content) -> node;
 }  // namespace json

@@ -3,6 +3,7 @@
 #include <sys/types.h>
 
 #include <cstring>
+#include <filesystem>
 #include <format>
 #include <functional>
 #include <iomanip>
@@ -114,6 +115,24 @@ static std::vector<std::function<bool()>> tests{
                     .field("max")
                     .value<float>() != 299.66f)
                 return TEST_ERROR();
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
+            return TEST_ERROR();
+        }
+        return TEST_OK();
+    },
+    [] {
+        try {
+            const auto res = json::deserialize_file(
+                "/home/giorgi/git/personal/cppjson/_test/data/weather.json");
+            if (res.field("cod").value<std::string>() != "200")
+                return TEST_ERROR();
+            if (res.field("list")
+                    .at(1)
+                    .field("main")
+                    .field("temp")
+                    .value<float>() != 296.31f)
+                TEST_ERROR();
         } catch (const std::exception& ex) {
             log_exception(ex.what());
             return TEST_ERROR();

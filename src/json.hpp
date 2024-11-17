@@ -105,25 +105,4 @@ class node final {
     node_tag _tag{node_tag::JsonNull};
     value_t _value{(void*)NULL};
 };
-
-class doc final {
-   public:
-    doc() = default;
-    ~doc() = default;
-
-    doc(const char* filepath);
-    doc(node root) noexcept;
-    doc(node&& root) noexcept;
-
-    [[nodiscard]]
-    auto load_file(const char* filepath) noexcept -> bool;
-    auto load_root(node root) noexcept -> void;
-    auto load_root(node&& root) noexcept -> void;
-
-    [[nodiscard]]
-    auto dump() const noexcept -> std::string;
-
-   private:
-    node_ptr _root{};
-};
 }  // namespace json

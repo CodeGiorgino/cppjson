@@ -1,14 +1,8 @@
 #include "json.hpp"
 
 #include <format>
-#include <memory>
 #include <stdexcept>
 #include <utility>
-
-#define UNUSED(var) (void)var
-#define TODO(name)          \
-    throw std::logic_error( \
-        std::format("Function not implemented yet: `{}`", name))
 
 /* json_node implementation */
 namespace json {
@@ -76,34 +70,5 @@ auto node::field(std::string key) const -> const node& {
         throw std::out_of_range(std::format("key `{}` not in dictionary", key));
 
     return value.at(key);
-}
-}  // namespace json
-
-/* json_doc implementation */
-namespace json {
-doc::doc(const char* filepath) {
-    UNUSED(filepath);
-    TODO("json::doc::doc(const char*)");
-}
-
-doc::doc(node root) noexcept : _root(std::make_shared<node>(root)) {}
-doc::doc(node&& root) noexcept
-    : _root(std::make_shared<node>(std::move(root))) {}
-
-auto doc::load_file(const char* filepath) noexcept -> bool {
-    UNUSED(filepath);
-    TODO("json::doc::load_file(const char*)");
-}
-
-auto doc::load_root(node root) noexcept -> void {
-    _root = std::make_shared<node>(root);
-}
-
-auto doc::load_root(node&& root) noexcept -> void {
-    _root = std::make_shared<node>(std::move(root));
-}
-
-auto doc::dump() const noexcept -> std::string {
-    TODO("json::doc::dump()");
 }
 }  // namespace json
