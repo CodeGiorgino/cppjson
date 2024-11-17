@@ -1,15 +1,22 @@
 #pragma once
+#include <exception>
 
-#include "cppjson.hpp"
+#include "json.hpp"
 
 namespace json {
-namespace parser {
-/**
- * @brief Deserialize the json string
- *
- * @param raw The raw json string
- * @return The serialized json node
- */
-auto deserialize(std::string raw) -> json_node;
-}  // namespace parser
+class invalid_json_exception final : public std::exception {
+   public:
+    invalid_json_exception(const std::string& msg) : _msg(msg) {}
+    auto what() const noexcept -> const char* {
+        return _msg.c_str();
+    }
+
+   private:
+    const std::string _msg{};
+};
+
+[[nodiscard]]
+auto deserialize(const char* filepath) -> node;
+[[nodiscard]]
+auto deserialize(std::string content) -> node;
 }  // namespace json

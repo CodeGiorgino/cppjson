@@ -13,12 +13,12 @@ function do_build() {
     for file in src/*.cpp; do
         filename="$(basename $file)"
         filename="${filename%.*}"
-        echo "info: building file: $file"
+        echo "[?] info: building file: $file"
         g++ -Wall -Wextra -std=c++23 -c -$OPT_LEVEL -o obj/$filename.o $file
     done
 
     # linking
-    echo "info: linking object files"
+    echo "[?] info: linking object files"
     objs=(obj/*.o)
     ar rs -o build/json.a -- ${objs[@]}
 
@@ -28,12 +28,12 @@ function do_build() {
 
 function do_tests() {
     if [ ! -d _test ]; then
-        echo 'error: cannot find folder `_test`'
+        echo '[!] fatal: cannot find folder `_test`'
         exit 1
     fi
 
     if [ ! -f _test/build.sh ]; then
-        echo 'error: cannot find script file `_test/build.sh`'
+        echo '[!] fatal: cannot find script file `_test/build.sh`'
         exit 1
     fi
 
@@ -57,37 +57,37 @@ function do_clean() {
 # check args
 if [ $# -eq 0 ]; then
     OPT_LEVEL=O2
-    echo 'info: DEBUG set to false'
+    echo '[?] info: DEBUG set to false'
     do_build
 elif [ $# -gt 1 ]; then
-    echo 'error: too many arguments provided'
+    echo '[!] error: too many arguments provided'
     exit 1
 else
     case $1 in
         -d | --debug)
             OPT_LEVEL=ggdb
-            echo 'info: DEBUG set to true'
-            echo 'info: building source'
+            echo '[?] info: DEBUG set to true'
+            echo '[?] info: building source'
             do_build
             ;;
 
         --clean)
-            echo 'info: cleaning the targets'
+            echo '[?] info: cleaning the targets'
             do_clean
             ;;
 
         --test)
             OPT_LEVEL=O2
-            echo 'info: DEBUG set to false'
-            echo 'info: building source'
+            echo '[?] info: DEBUG set to false'
+            echo '[?] info: building source'
             do_build
-            echo 'info: building tests'
+            echo '[?] info: building tests'
             echo '--------------------'
             do_tests
             ;;
 
         *)
-            echo "error: unknown option provided: $1"
+            echo "[!] error: unknown option provided: $1"
             exit 1
     esac
 fi

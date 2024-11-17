@@ -13,20 +13,20 @@
 namespace json {
 class node_exception final : public std::exception {
    public:
-    node_exception(const char* msg) : _msg(msg) {}
+    node_exception(const std::string& msg) : _msg(msg) {}
     auto what() const noexcept -> const char* {
-        return _msg;
+        return _msg.c_str();
     }
 
    private:
-    const char* _msg{};
+    const std::string _msg{};
 };
 
 class node;
 using node_ptr = std::shared_ptr<node>;
 
 using array = std::vector<node>;
-using object = std::map<const char*, node>;
+using object = std::map<std::string, node>;
 
 using value_t =
     std::variant<void*, bool, int, float, std::string, array, object>;
@@ -65,8 +65,8 @@ class node final {
 
     auto at(uint idx) -> node&;
     auto at(uint idx) const -> const node&;
-    auto field(const char* key) -> node&;
-    auto field(const char* key) const -> const node&;
+    auto field(std::string key) -> node&;
+    auto field(std::string key) const -> const node&;
 
    private:
     template <is_node_convertible Tp>

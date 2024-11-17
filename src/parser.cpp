@@ -1,160 +1,249 @@
 #include "parser.hpp"
 
 #include <cctype>
+#include <cstdio>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iomanip>
+#include <ios>
 #include <iostream>
-#include <ostream>
 #include <regex>
-#include <stdexcept>
 #include <string>
-#include <utility>
 
-#include "cppjson.hpp"
+#include "json.hpp"
+
+#define UNUSED(var) (void)var
+#define TODO(name)          \
+    throw std::logic_error( \
+        std::format("Function not implemented yet: `{}`", name))
 
 namespace json {
-namespace parser {
-/**
- * @brief Normalise the json string removing spaces and newlines
- *
- * @param raw The raw json string
- * @return The normalised json string
- */
-auto normalize_json_string(const std::string &raw) noexcept -> std::string {
-    std::string retval{};
-    bool quoted = false;
-    for (const auto &ch : raw) {
+auto parse_array(const std::string& source, uint& idx) -> node;
+auto parse_object(const std::string& source, uint& idx) -> node;
+
+auto parse_value(const std::string& source, uint& idx) -> node {
+    auto startIdx{idx};
+
+    std::string buf{};
+    bool quoted{false};
+    while (const auto& ch = source[idx]) {
         if (ch == '"') {
-            retval += ch;
-            quoted ^= true;
-            continue;
+            if (quoted)
+                quoted = false;
+            else {
+                quoted = true;
+                startIdx = idx;
+            }
         }
 
-        if (isspace(ch)) {
-            if (quoted) retval += ch;
-            continue;
+        if (!quoted) {
+            if (isspace(ch)) {
+                idx++;
+                continue;
+            }
+
+            if (ch == ',' || ch == ']' || ch == '}') break;
+            if (ch == '[') return parse_array(source, idx);
+            if (ch == '{') return parse_object(source, idx);
         }
 
-        retval += ch;
+        buf += ch;
+        idx++;
     }
 
-    return retval;
+    if (buf.empty())
+        throw invalid_json_exception(std::format(
+            "missing or empty object field value at position {}", startIdx));
+
+    if (buf == "null") return node{};
+    if (buf == "true") return node{true};
+    if (buf == "false") return node{false};
+    if (std::regex_match(buf, std::regex("^[+-]?[0-9]+$")))
+        return node{std::stoi(buf)};
+    if (std::regex_match(buf, std::regex("^[+-]?[0-9]+(?:\\.[0-9]+)?$")))
+        return node{std::stof(buf)};
+    if (buf[0] == '"') {
+        if (quoted)
+            throw invalid_json_exception(std::format(
+                "unclosed object field value found, opened at position {}",
+                startIdx));
+
+        return node{buf.substr(1, buf.length() - 2)};
+    }
+
+    throw invalid_json_exception(
+        std::format("cannot parse object field value `{}` "
+                    "at position {}",
+                    buf, startIdx));
 }
 
-/**
- * @brief Get the first nested node in the array or the object
- *
- * @param The raw json string
- * @return The end index of the nested node and the node itself
- */
-auto get_first_nested_node(const std::string &raw)
-    -> std::pair<size_t, std::string> {
-    if (raw.empty())
-        throw std::invalid_argument("cannot find nested node in empty string");
-    if (raw[0] != '{' && raw[0] != '[')
-        throw std::invalid_argument(
-            "can only find nested node in objects or arrays");
+auto parse_array(const std::string& source, uint& idx) -> node {
+    const auto startIdx{idx};
 
-    char ch{};
-    size_t brackets_count{}, start{}, end{};
-    for (size_t i{}; i < raw.length(); ++i) {
-        ch = raw[i];
-        if ((ch == '{' || ch == '[') && ++brackets_count == 2)
-            start = i;
+    array retval{};
+    uint itemsCount{0};
+    bool isClosed{false};
+    while (const auto& ch = source[++idx]) {
+        if (isspace(ch) || ch == '\r' || ch == '\n') continue;
+        if (ch == ',') {
+            if (itemsCount != 0) continue;
+            throw invalid_json_exception(
+                std::format("item separator found with no previous item "
+                            "declared at position {}",
+                            idx));
+        }
 
-        else if ((ch == '}' || ch == ']') && --brackets_count == 1) {
-            end = i + 1;
+        retval.push_back(parse_value(source, idx));
+        itemsCount++;
+
+        if (source[idx] == ']') {
+            isClosed = true;
+            break;
+        }
+    };
+
+    if (!isClosed)
+        throw invalid_json_exception(std::format(
+            "unclosed array found, opened at position {}", startIdx));
+
+    return node{retval};
+}
+
+auto parse_object(const std::string& source, uint& idx) -> node {
+    const auto startIdx{idx};
+
+    object retval{};
+    uint itemsCount{0};
+    bool isClosed{false};
+    while (const auto& ch = source[++idx]) {
+        if (isspace(ch) || ch == '\r' || ch == '\n') continue;
+        if (ch == ',') {
+            if (itemsCount != 0) continue;
+            throw invalid_json_exception(
+                std::format("item separator found with no previous item "
+                            "declared at position {}",
+                            idx));
+        }
+
+        if (ch != '"')
+            throw invalid_json_exception(
+                std::format("expected open quote for object key "
+                            "declaration, but got `{}` at position {}",
+                            ch, idx));
+
+        auto keyStartIdx{idx};
+        std::string key{};
+        bool quoted{true};
+        while (const auto& chKey = source[++idx]) {
+            if (chKey == '"') {
+                quoted = false;
+                break;
+            }
+
+            key += chKey;
+        }
+
+        if (quoted)
+            throw invalid_json_exception(
+                std::format("unclosed object key found, opened at position {}",
+                            keyStartIdx));
+
+        if (key.empty())
+            throw invalid_json_exception(std::format(
+                "missing or empty object key at position {}", keyStartIdx));
+
+        while (const auto& ch = source[++idx]) {
+            if (isspace(ch)) continue;
+            if (ch == ':') break;
+            throw invalid_json_exception(std::format(
+                "expected field initialiser operator `:`, but got `{}` "
+                "at position {}",
+                ch, idx));
+        }
+
+        if (retval.contains(key))
+            throw invalid_json_exception(std::format(
+                "duplicate key found in object at position {}: `{}`", idx,
+                key));
+
+        retval.emplace(key, parse_value(source, ++idx));
+        itemsCount++;
+
+        // FIXME: last child object
+        if (source[idx] == '}') {
+            isClosed = true;
             break;
         }
     }
 
-    if (start == 0 || end == 0)
-        throw std::invalid_argument("cannot find nested node in json string");
+    if (!isClosed)
+        throw invalid_json_exception(std::format(
+            "unclosed object found, opened at position {}", startIdx));
 
-    return {end, raw.substr(start, end - start)};
+    return node{retval};
 }
 
-auto deserialize(std::string raw) -> json_node {
-    if (raw.length() == 0)
-        throw std::invalid_argument("cannot deserialize an empty string");
+auto deserialize(const char* filepath) -> node {
+    std::filesystem::path path{filepath};
+    if (!std::filesystem::exists(path))
+        throw invalid_json_exception(
+            std::format("cannot find file `{}`", filepath));
 
-    raw = normalize_json_string(raw);
+    if (!path.has_extension() || path.extension() != ".json")
+        throw invalid_json_exception(
+            "the file must have the `.json` extension");
 
-    if (raw[0] == '{') {
-        json_node retval{object_t{}};
-        std::smatch match{};
+    std::ifstream filestream{path};
+    if (!filestream)
+        throw invalid_json_exception(
+            std::format("cannot open file `{}`", filepath));
 
-        while (std::regex_search(raw, match,
-                                 std::regex("^\\{\"(.+?)\":(.+?)(,.+)?\\}$"))) {
-            if (match[2].str()[0] == '{' || match[2].str()[0] == '[') {
-                const auto [end, raw_node] = get_first_nested_node(raw);
-                retval << (entry_t){match[1], deserialize(raw_node)};
-                raw = "{" + raw.substr(end);
-            }
-
-            else {
-                retval << (entry_t){match[1], deserialize(match[2])};
-                raw = "{" + match[3].str() + "}";
-            }
-
-            if (raw[1] == ',') raw.erase(1, 1);
-        };
-
-        if (raw != "{}")
-            throw std::invalid_argument(
-                "cannot deserialize the json string into an object");
-
-        return retval;
+    const auto filesize{std::filesystem::file_size(path)};
+    if (filesize == 0) {
+        filestream.close();
+        throw invalid_json_exception(
+            std::format("the file `{}` is empty", filepath));
     }
 
-    else if (raw[0] == '[') {
-        json_node retval{array_t{}};
-        std::smatch match{};
+    std::string content{};
+    std::string line{};
+    while (std::getline(filestream, line)) {
+        if (line.empty()) continue;
+        content += line;
+    };
 
-        while (
-            std::regex_search(raw, match, std::regex("^\\[(.+?)(,.+)?\\]$"))) {
-            if (match[1].str()[0] == '{' || match[1].str()[0] == '[') {
-                const auto [end, raw_node] = get_first_nested_node(raw);
-                retval << deserialize(raw_node);
-                std::cout << "info: inserted" << std::endl;
-                raw = "[" + raw.substr(end + 1);
-            }
-
-            else {
-                retval << deserialize(match[1]);
-                raw = "[" + match[2].str() + "]";
-            }
-
-            if (raw[1] == ',') raw.erase(1, 1);
-        };
-
-        if (raw != "[]")
-            throw std::invalid_argument(
-                "cannot deserialize the json string into an array");
-
-        return retval;
+    node root{};
+    uint idx{0};
+    if (content[0] == '[') {
+        root = parse_array(content, idx);
+    } else if (content[0] == '{') {
+        root = parse_object(content, idx);
+    } else {
+        filestream.close();
+        throw invalid_json_exception(
+            std::format("expected array or object declaration as json root, "
+                        "but got `{}`",
+                        content[0]));
     }
 
-    else {
-        if (raw == "true")
-            return json_node{true};
-
-        else if (raw == "false")
-            return json_node{false};
-
-        else if (std::regex_match(raw, std::regex("^-?[0-9]+$")))
-            return json_node{std::stoi(raw)};
-
-        else if (std::regex_match(raw, std::regex("^-?[0-9]+\\.[0-9]+$")))
-            return json_node{std::stof(raw)};
-
-        else if (std::smatch match;
-                 std::regex_search(raw, match, std::regex("^\"(.+)\"$")))
-            return json_node{match[1]};
-        else
-            throw std::invalid_argument("cannot parse '" + raw +
-                                        "' as a json value");
-    }
-
-    throw std::invalid_argument("cannot deserialize the json string");
+    filestream.close();
+    return root;
 }
-}  // namespace parser
+
+auto deserialize(std::string content) -> node {
+    node root{};
+    uint idx{0};
+    if (content[0] == '[') {
+        root = parse_array(content, idx);
+    } else if (content[0] == '{') {
+        root = parse_object(content, idx);
+    } else
+        throw invalid_json_exception(
+            std::format("expected array or object declaration as json root, "
+                        "but got `{}`",
+                        content[0]));
+
+    return root;
+}
 }  // namespace json

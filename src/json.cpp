@@ -38,8 +38,7 @@ auto node::at(uint idx) -> node& {
     if (idx >= value.size())
         throw std::out_of_range(
             std::format("index out of range: node field size {} ({} was given)",
-                        value.size(), idx)
-                .c_str());
+                        value.size(), idx));
 
     return value[idx];
 }
@@ -52,32 +51,29 @@ auto node::at(uint idx) const -> const node& {
     if (idx >= value.size())
         throw std::out_of_range(
             std::format("index out of range: node field size {} ({} was given)",
-                        value.size(), idx)
-                .c_str());
+                        value.size(), idx));
 
     return value[idx];
 }
 
-auto node::field(const char* key) -> node& {
+auto node::field(std::string key) -> node& {
     if (_tag != node_tag::JsonObject)
         throw node_exception("cannot access non-object nodes fields");
 
     auto& value{std::get<object>(_value)};
-    if (not value.contains(key))
-        throw std::out_of_range(
-            std::format("key `{}` not in dictionary", key).c_str());
+    if (!value.contains(key))
+        throw std::out_of_range(std::format("key `{}` not in dictionary", key));
 
     return value.at(key);
 }
 
-auto node::field(const char* key) const -> const node& {
+auto node::field(std::string key) const -> const node& {
     if (_tag != node_tag::JsonObject)
         throw node_exception("cannot access non-object nodes fields");
 
     const auto& value{std::get<object>(_value)};
-    if (not value.contains(key))
-        throw std::out_of_range(
-            std::format("key `{}` not in dictionary", key).c_str());
+    if (!value.contains(key))
+        throw std::out_of_range(std::format("key `{}` not in dictionary", key));
 
     return value.at(key);
 }

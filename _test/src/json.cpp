@@ -5,13 +5,19 @@
 #include <cstring>
 #include <format>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <stdexcept>
 #include <variant>
 #include <vector>
 
 auto log_info(const char* msg, uint line) noexcept -> void {
-    std::cout << std::format("> {}:{}:\tinfo: {}", __FILE__, line, msg)
+    std::cout << std::format("[?] {}:{}:\tinfo: {}", __FILE__, line, msg)
+              << std::endl;
+}
+
+auto log_exception(const char* msg) noexcept -> void {
+    std::cout << "[!] fatal: unhandled exception: " << std::quoted(msg)
               << std::endl;
 }
 
@@ -24,9 +30,8 @@ static std::vector<std::function<bool()>> tests{
         if (node.tag() != json::node_tag::JsonNull) return TEST_ERROR();
         try {
             if (node.value<void*>() != NULL) return TEST_ERROR();
-        } catch (const std::bad_variant_access&) {
-            return TEST_ERROR();
-        } catch (...) {
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             TEST_ERROR();
         }
         return TEST_OK();
@@ -36,9 +41,8 @@ static std::vector<std::function<bool()>> tests{
         if (node.tag() != json::node_tag::JsonNull) return TEST_ERROR();
         try {
             if (node.value<void*>() != NULL) return TEST_ERROR();
-        } catch (const std::bad_variant_access&) {
-            return TEST_ERROR();
-        } catch (...) {
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             TEST_ERROR();
         }
         return TEST_OK();
@@ -49,9 +53,8 @@ static std::vector<std::function<bool()>> tests{
         if (node.tag() != json::node_tag::JsonBool) return TEST_ERROR();
         try {
             if (node.value<bool>() != value) return TEST_ERROR();
-        } catch (const std::bad_variant_access&) {
-            return TEST_ERROR();
-        } catch (...) {
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             TEST_ERROR();
         }
         return TEST_OK();
@@ -62,9 +65,8 @@ static std::vector<std::function<bool()>> tests{
         if (node.tag() != json::node_tag::JsonInt) return TEST_ERROR();
         try {
             if (node.value<int>() != value) return TEST_ERROR();
-        } catch (const std::bad_variant_access&) {
-            return TEST_ERROR();
-        } catch (...) {
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             TEST_ERROR();
         }
         return TEST_OK();
@@ -75,9 +77,8 @@ static std::vector<std::function<bool()>> tests{
         if (node.tag() != json::node_tag::JsonFloat) return TEST_ERROR();
         try {
             if (node.value<float>() != value) return TEST_ERROR();
-        } catch (const std::bad_variant_access&) {
-            return TEST_ERROR();
-        } catch (...) {
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             TEST_ERROR();
         }
         return TEST_OK();
@@ -88,9 +89,8 @@ static std::vector<std::function<bool()>> tests{
         if (node.tag() != json::node_tag::JsonString) return TEST_ERROR();
         try {
             if (node.value<std::string>() != value) return TEST_ERROR();
-        } catch (const std::bad_variant_access&) {
-            return TEST_ERROR();
-        } catch (...) {
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             TEST_ERROR();
         }
         return TEST_OK();
@@ -100,80 +100,96 @@ static std::vector<std::function<bool()>> tests{
         try {
             const auto& _ = node.at(0);
         } catch (const json::node_exception&) {
-        } catch (...) {
+            return TEST_OK();
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             return TEST_ERROR();
         }
-        return TEST_OK();
+        return TEST_ERROR();
     },
     [] {
         json::node node{1};
         try {
             auto& _ = node.at(0);
         } catch (const json::node_exception&) {
-        } catch (...) {
+            return TEST_OK();
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             return TEST_ERROR();
         }
-        return TEST_OK();
+        return TEST_ERROR();
     },
     [] {
         json::node node{1};
         try {
             auto& _ = node.field("first");
         } catch (const json::node_exception&) {
-        } catch (...) {
+            return TEST_OK();
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             return TEST_ERROR();
         }
-        return TEST_OK();
+        return TEST_ERROR();
     },
     [] {
         json::node node{1};
         try {
             const auto& _ = node.field("first");
         } catch (const json::node_exception&) {
-        } catch (...) {
+            return TEST_OK();
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             return TEST_ERROR();
         }
-        return TEST_OK();
+        return TEST_ERROR();
     },
     [] {
         json::node node{json::array{json::node(), json::node(), json::node()}};
         try {
             auto& _ = node.at(3);
         } catch (const std::out_of_range&) {
-        } catch (...) {
+            return TEST_OK();
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             return TEST_ERROR();
         }
-        return TEST_OK();
+        return TEST_ERROR();
     },
     [] {
         json::node node{json::array{json::node(), json::node(), json::node()}};
         try {
             const auto& _ = node.at(3);
         } catch (const std::out_of_range&) {
-        } catch (...) {
+            return TEST_OK();
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             return TEST_ERROR();
         }
-        return TEST_OK();
+        return TEST_ERROR();
     },
     [] {
         json::node node{json::object{{"first", json::node()}}};
         try {
             auto& _ = node.field("second");
         } catch (const std::out_of_range&) {
-        } catch (...) {
+            return TEST_OK();
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             return TEST_ERROR();
         }
-        return TEST_OK();
+        return TEST_ERROR();
     },
     [] {
         json::node node{json::object{{"first", json::node()}}};
         try {
             const auto& _ = node.field("second");
         } catch (const std::out_of_range&) {
-        } catch (...) {
+            return TEST_OK();
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             return TEST_ERROR();
         }
-        return TEST_OK();
+        return TEST_ERROR();
     },
     [] {
         json::array value{json::node(), json::node(69), json::node(420.f)};
@@ -182,9 +198,8 @@ static std::vector<std::function<bool()>> tests{
         try {
             const auto nodeValue = node.value<json::array>();
             if (value.size() != nodeValue.size()) return TEST_ERROR();
-        } catch (const std::bad_variant_access&) {
-            return TEST_ERROR();
-        } catch (...) {
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             return TEST_ERROR();
         }
         if (node.at(0).value<void*>() != value[0].value<void*>())
@@ -204,9 +219,8 @@ static std::vector<std::function<bool()>> tests{
         try {
             const auto nodeValue = node.value<json::object>();
             if (value.size() != nodeValue.size()) return TEST_ERROR();
-        } catch (const std::bad_variant_access&) {
-            return TEST_ERROR();
-        } catch (...) {
+        } catch (const std::exception& ex) {
+            log_exception(ex.what());
             return TEST_ERROR();
         }
         if (node.field("first").value<void*>() != value["first"].value<void*>())
@@ -232,7 +246,9 @@ static std::vector<std::function<bool()>> tests{
     },
 };
 
-auto main(void) -> int {
+auto main(int argc, char** argv) -> int {
+    if (argc > 1) throw std::invalid_argument("unexpected parameters provided");
+
     std::cout << "----------[ Running tests ]----------" << std::endl;
 
     uint errorCount{0};
@@ -241,7 +257,7 @@ auto main(void) -> int {
     }
 
     std::cout << "-------------------------------------" << std::endl
-              << "Test suite report:" << std::endl
+              << "Test suite report: " << std::quoted(*argv) << std::endl
               << "  Completed:  " << tests.size() << std::endl
               << "  Errors:     " << errorCount
               << std::format(" ({:.2f}%)", errorCount * 100.f / tests.size())
