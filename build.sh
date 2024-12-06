@@ -20,7 +20,7 @@ function do_build() {
     # linking
     echo "[?] info: linking object files"
     objs=(obj/*.o)
-    ar rs -o build/json.a -- ${objs[@]}
+    ar rs -o build/libjson.a -- ${objs[@]}
 
     hpps=(./src/*.hpp)
     cp ${hpps[@]} -- build/include
